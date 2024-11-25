@@ -143,7 +143,8 @@ class Scraper:
                 'name': result.get('name'),
                 'price': result.get('price', {}).get('formattedValue'),
                 'Promotion Price': self.get_promotion_message(result.get('potentialPromotions', [])),
-                'Available': result.get('available')
+                'retailer': "Pick n Pay",
+                'image_url': next((item['url'] for item in result.get('images') if item['format'] == 'carousel'), None)
             }
 
             prod_lst.append(prod_dict)
@@ -168,14 +169,15 @@ class Scraper:
         else:
             promotion = promotions
 
-        return promotion.get('promotionTextMessage', 'Promotion details not available') if promotion else 'No promotion available'
+        return promotion.get('promotionTextMessage', 'Promotion details not available') if promotion else 'No promo'
 
-    def run(self):
+
+    def run(self, filename='products.csv'):
         """
-        Run the scraping process, collecting data from multiple pages until a condition is met.
+        Run the scraping process, collecting data from multiple pages.
 
-        Returns:
-        pandas.DataFrame: A DataFrame containing all the scraped product information.
+        Args:
+        filename (str): The name of the CSV file to save the results to.
         """
         page_number = 0
         dfs = []
@@ -190,23 +192,36 @@ class Scraper:
                 break
 
             dfs.append(response_df)
-
             page_number += 1
 
+            # if page_number == 101:
+            #     break
+
             # Uncomment the following block for production use
-            if len(dfs) > 2:
-                if response_df.equals(dfs[-2]):
-                    break
+            # if len(dfs) > 2:
+            #     if response_df.equals(dfs[-2]):
+            #         break
 
         if dfs:
             df = pd.concat(dfs, ignore_index=True)
+
+            # Load existing file or start from 0
+            try:
+                existing_df = pd.read_csv(filename, index_col=0)
+                next_index = existing_df.index.max() + 1
+            except FileNotFoundError:
+                next_index = 0
+
+            # Set index for new DataFrame
+            df.index = range(next_index, next_index + len(df))
             df.index.name = 'index'
-            df.to_csv('pnp_products.csv', index=True)
-            print(f"Scraping complete. {len(df)} products scraped and saved to 'pnp_products.csv'.")
-            return df
+
+            # Save to the shared file
+            df.to_csv(filename, mode='a', header=not pd.io.common.file_exists(filename))
+            print(f"Scraping complete. {len(df)} products scraped and saved to '{filename}'.")
         else:
             print("No data was scraped.")
-            return pd.DataFrame()
+
 
 def main(timeout, referer_url):
     """
