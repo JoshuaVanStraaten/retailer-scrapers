@@ -85,7 +85,7 @@ def scrape_checkers(base_url, start_page=0, end_page=9):
                 all_data.append({
                     'name': product_name,
                     'price': price_old if price_old else price_current,
-                    'Promotion Price': price_current if price_old else "No promo",
+                    'promotion_price': price_current if price_old else "No promo",
                     'retailer': "Checkers",
                     'image_url': product_image
                 })
