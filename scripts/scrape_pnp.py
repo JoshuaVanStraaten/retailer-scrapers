@@ -142,7 +142,7 @@ class Scraper:
             prod_dict = {
                 'name': result.get('name'),
                 'price': result.get('price', {}).get('formattedValue'),
-                'Promotion Price': self.get_promotion_message(result.get('potentialPromotions', [])),
+                'promotion_price': self.get_promotion_message(result.get('potentialPromotions', [])),
                 'retailer': "Pick n Pay",
                 'image_url': next((item['url'] for item in result.get('images') if item['format'] == 'carousel'), None)
             }
