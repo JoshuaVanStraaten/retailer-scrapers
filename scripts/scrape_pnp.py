@@ -7,6 +7,11 @@ import pytz
 from time import sleep
 from urllib.parse import urlparse
 
+
+SUPABASE_URL = "<supabase_url>"
+SUPABASE_KEY = "<supabase_key>"
+
+
 class Scraper:
     """
     A class to scrape product information from PnP website, complying with robots.txt rules.
@@ -39,7 +44,7 @@ class Scraper:
         end_time = time(8, 45)
         return start_time <= utc_now <= end_time
 
-    def request(self, page_number):
+    def request(self, page_number, max_retries=3):
         """
         Send a POST request to the website and return the JSON response.
 
@@ -102,7 +107,9 @@ class Scraper:
         }
 
         print(f"Requesting page {page_number}")
-        while True:
+        retry_count = 0
+
+        while retry_count < max_retries:
             try:
                 response = self.session.post(base_url, params=params, headers=headers)
 
@@ -114,12 +121,17 @@ class Scraper:
                     return None
 
             except Exception as e:
-                print(f"An error occurred: {str(e)}")
-                return None
+                retry_count += 1
+                print(f"An error occurred: {str(e)}. Retry {retry_count}/{max_retries}")
+
+                if retry_count >= max_retries:
+                    print("Max retries reached. Request failed.")
+                    return None
 
             finally:
-                print(f"Waiting for {self.timeout} seconds before next request...")
+                print(f"Waiting for {self.timeout} seconds before the next attempt...")
                 sleep(self.timeout)
+
 
     def process(self, response):
         """
@@ -150,7 +162,7 @@ class Scraper:
             prod_lst.append(prod_dict)
 
         return pd.DataFrame(prod_lst)
-    
+
     def get_promotion_message(self, promotions):
         """
         Extract the promotion message from the promotions data.
@@ -163,13 +175,83 @@ class Scraper:
         """
         if not promotions:
             return 'No promotion available'
-        
+
         if isinstance(promotions, list):
             promotion = promotions[0] if promotions else None
         else:
             promotion = promotions
 
         return promotion.get('promotionTextMessage', 'Promotion details not available') if promotion else 'No promo'
+
+
+    def load_existing_data(self, csv_file):
+        """
+        Load existing product data from a CSV file and return it as a dictionary.
+
+        This function attempts to read the specified CSV file using UTF-8 encoding.
+        If UTF-8 fails, it falls back to 'latin1' encoding.
+        It logs warnings for any rows with missing (NaN) values in the file and
+        skips them in the returned data.
+
+        Args:
+            csv_file (str): The path to the CSV file to load.
+
+        Returns:
+            dict: A dictionary where keys are product names and values are dictionaries of
+                  product details.
+                Returns an empty dictionary if the file is not found or unreadable.
+        """
+        try:
+            # Try reading the CSV file with UTF-8 encoding first
+            df = pd.read_csv(csv_file, encoding='utf-8')
+        except UnicodeDecodeError:
+            # If UTF-8 fails, try an alternative encoding (e.g., 'latin1')
+            print(f"Warning: Failed to read {csv_file} with UTF-8 encoding. Trying 'latin1'.")
+            df = pd.read_csv(csv_file, encoding='latin1')
+        except FileNotFoundError:
+            print(f"Error: File {csv_file} not found.")
+            return {}
+
+        # Check for rows with NaN values and log them
+        rows_with_nan = df[df.isna().any(axis=1)]
+        if not rows_with_nan.empty:
+            print(f"Warning: Found rows with NaN values:\n{rows_with_nan}")
+
+        # Convert the DataFrame to a dictionary
+        return {
+            row['name']: row.to_dict() for _, row in df.iterrows()
+        }
+
+
+    def upsert_to_supabase(self, data, batch_size=500):
+        """
+        Upserts data to Supabase in batches.
+
+        Args:
+            data (list): A list of dictionaries containing the rows to be upserted.
+            batch_size (int): The number of rows to upsert in each batch (default: 500).
+
+        Returns:
+            None
+        """
+        from supabase import create_client
+
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+        try:
+            total_rows = len(data)
+            print(f"Total rows to upsert: {total_rows}")
+
+            for start in range(0, total_rows, batch_size):
+                end = start + batch_size
+                batch = data[start:end]
+                print(f"Upserting batch: {start + 1} to {end}")
+
+                response = supabase.table('Products').upsert(batch).execute()
+                print(f"Batch upsert response: {response}")
+
+        except Exception as e:
+            print(f"Error upserting to Supabase: {e}")
 
 
     def run(self, filename='products.csv'):
@@ -180,7 +262,22 @@ class Scraper:
         filename (str): The name of the CSV file to save the results to.
         """
         page_number = 0
-        dfs = []
+
+        # Load existing file or initialize from scratch
+        try:
+            existing_df = pd.read_csv(filename, index_col=0, encoding='utf-8')
+            next_index = max(7500, existing_df.index.max() + 1)  # Start from 7500 if file exists
+        except FileNotFoundError:
+            print(f"Warning: File {filename} not found. Starting a new file.")
+            next_index = 7500
+        except UnicodeDecodeError:
+            print(f"Warning: Failed to read {filename} with UTF-8 encoding. Trying 'latin1'.")
+            try:
+                existing_df = pd.read_csv(filename, index_col=0, encoding='latin1')
+                next_index = max(7500, existing_df.index.max() + 1)
+            except Exception as e:
+                print(f"Error: Unable to read {filename} with fallback encoding. {e}")
+                next_index = 7500
 
         while True:
             response = self.request(page_number)
@@ -191,36 +288,49 @@ class Scraper:
             if response_df.empty:
                 break
 
-            dfs.append(response_df)
+            # Set the index for the new data
+            response_df.index = range(next_index, next_index + len(response_df))
+            response_df.index.name = 'index'
+
+            # Save the processed data to the CSV file
+            try:
+                response_df.to_csv(
+                    filename,
+                    mode='a',
+                    header=not pd.io.common.file_exists(filename),
+                    encoding='utf-8'
+                )
+                print(f"Page {page_number} data successfully saved to {filename}.")
+            except UnicodeEncodeError:
+                print(f"Warning: Failed to save {filename} with UTF-8 encoding. Trying 'latin1'.")
+                response_df.to_csv(
+                    filename,
+                    mode='a',
+                    header=not pd.io.common.file_exists(filename),
+                    encoding='latin1'
+                )
+
+            next_index += len(response_df)
             page_number += 1
 
-            # if page_number == 101:
-            #     break
+            if page_number == 138:
+                break
 
             # Uncomment the following block for production use
-            # if len(dfs) > 2:
+            # if page_number > 1:
             #     if response_df.equals(dfs[-2]):
             #         break
 
-        if dfs:
-            df = pd.concat(dfs, ignore_index=True)
+        # Load data from the updated CSV
+        new_data = self.load_existing_data('products.csv')
 
-            # Load existing file or start from 0
-            try:
-                existing_df = pd.read_csv(filename, index_col=0)
-                next_index = existing_df.index.max() + 1
-            except FileNotFoundError:
-                next_index = 0
-
-            # Set index for new DataFrame
-            df.index = range(next_index, next_index + len(df))
-            df.index.name = 'index'
-
-            # Save to the shared file
-            df.to_csv(filename, mode='a', header=not pd.io.common.file_exists(filename))
-            print(f"Scraping complete. {len(df)} products scraped and saved to '{filename}'.")
-        else:
-            print("No data was scraped.")
+        # Upsert the data to Supabase
+        try:
+            self.upsert_to_supabase(list(new_data.values()))
+            print(f"Scraping complete. {len(new_data.values())} products scraped and saved to '{filename}'.")
+        except Exception as e:
+            print(f"Error during Supabase upsert: {e}")
+        print("Scraping process complete.")
 
 
 def main(timeout, referer_url):
