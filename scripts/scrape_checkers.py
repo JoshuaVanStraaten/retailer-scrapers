@@ -34,7 +34,7 @@ def get_random_user_agent():
 
 def download_image(url, save_path):
     """
-    Downloads an image or SVG from a URL and saves it locally. 
+    Downloads an image or SVG from a URL and saves it locally.
     Uses Pillow for image processing.
 
     Args:
@@ -59,11 +59,11 @@ def download_image(url, save_path):
             print(f"Detected SVG content: {url}")
             svg_path = save_path.replace(".jpg", ".svg")
             png_path = save_path.replace(".jpg", ".png")
-            
+
             # Save original SVG
             with open(svg_path, "wb") as file:
                 file.write(response.content)
-            
+
             # Convert SVG to PNG using urllib and Pillow
             try:
                 import svglib.svglib
@@ -73,7 +73,7 @@ def download_image(url, save_path):
                 print(f"Converted SVG to PNG: {png_path}")
             except ImportError:
                 print("svglib or reportlab not installed. Skipping SVG to PNG conversion.")
-            
+
             return True
         else:
             # Save as regular image (JPEG, PNG, etc.)
@@ -173,22 +173,33 @@ def get_last_index_from_scraped_data(scraped_data):
 
 def get_price(price_old, price_current):
     def extract_numeric_price(price_str):
-        # Remove "R" and any non-numeric characters, then convert to float
-        if price_str:
-            price_str = ''.join(char for char in price_str if char.isdigit() or char == '.')
-            try:
-                return float(price_str)
-            except ValueError:
-                return None
-        return None
+        # If price is None or empty, return None
+        if not price_str:
+            return None
 
-    price_old = extract_numeric_price(price_old)
-    price_current = extract_numeric_price(price_current)
+        # Try to convert to float while preserving prefix/suffix
+        try:
+            # Find the first set of numeric characters (including decimal)
+            numeric_part = ''.join(char for char in price_str if char.isdigit() or char == '.')
+            float_value = float(numeric_part)
 
-    if price_old is not None and not math.isnan(price_old):
-        return price_old
-    elif price_current is not None and not math.isnan(price_current):
-        return price_current
+            # Preserve the original string if a valid float is found
+            return {
+                'value': float_value,
+                'original': price_str
+            }
+        except ValueError:
+            return None
+
+    # Process both prices
+    processed_old = extract_numeric_price(price_old)
+    processed_current = extract_numeric_price(price_current)
+
+    # Prioritize old price, then current price
+    if processed_old is not None:
+        return processed_old['original']
+    elif processed_current is not None:
+        return processed_current['original']
     else:
         return "no price available"
 
@@ -202,20 +213,20 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
     options.add_argument("--enable-gpu")
     options.add_argument("--enable-webgl")
     options.add_argument("--ignore-gpu-blocklist")  # Force GPU acceleration
-    
+
     # Reduce memory usage and improve performance
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-notifications")
     options.add_argument("--disable-infobars")
-    
+
     # Optimize image loading
     options.add_argument("--blink-settings=imagesEnabled=false")  # Only if you don't need page images
     options.add_experimental_option("prefs", {
         "profile.managed_default_content_settings.images": 2,  # 2 = block images, 1 = allow images
     })
-    
+
     # Memory management
     options.add_argument("--disable-application-cache")
     options.add_argument("--aggressive-cache-discard")
@@ -298,16 +309,16 @@ def get_optimal_threads():
 def scrape_checkers_concurrently(base_url, start_page, end_page, existing_data, starting_index):
     optimal_threads = 6  # For now just set to 6
     print(f"Using {optimal_threads} threads based on system specs.")
-    
+
     all_results = []
     current_index = starting_index
-    
+
     with ThreadPoolExecutor(optimal_threads) as executor:
         futures = {
             executor.submit(scrape_page, base_url, page, existing_data, current_index): page
             for page in range(start_page, end_page + 1)
         }
-        
+
         for future in as_completed(futures):
             try:
                 result, current_index = future.result()
@@ -353,21 +364,21 @@ def upsert_to_supabase(data, batch_size=500):
         None
     """
     from supabase import create_client
-    
+
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    
+
     try:
         total_rows = len(data)
         print(f"Total rows to upsert: {total_rows}")
-        
+
         for start in range(0, total_rows, batch_size):
             end = start + batch_size
             batch = data[start:end]
             print(f"Upserting batch: {start + 1} to {end}")
-            
+
             response = supabase.table('Products').upsert(batch).execute()
             print(f"Batch upsert response: {response}")
-    
+
     except Exception as e:
         print(f"Error upserting to Supabase: {e}")
 
@@ -375,7 +386,7 @@ def upsert_to_supabase(data, batch_size=500):
 def save_to_csv(product_list, filename='products.csv'):
     """
     Save products to a CSV file, appending data if the file exists, otherwise creating a new file.
-    
+
     Args:
     product_list (list): List of dictionaries containing product information.
     filename (str): The name of the CSV file (default: 'products.csv').
@@ -408,7 +419,7 @@ if __name__ == "__main__":
     base_url = "https://www.checkers.co.za/c-2256/All-Departments?q=%3Arelevance"
     existing_data = load_existing_data('products_old.csv')
     starting_index = get_last_index('products.csv')
-    scraped_data = scrape_checkers_concurrently(base_url, start_page=0, end_page=375, 
+    scraped_data = scrape_checkers_concurrently(base_url, start_page=0, end_page=375,
                                                 existing_data=existing_data, starting_index=starting_index)
 
     if scraped_data:
