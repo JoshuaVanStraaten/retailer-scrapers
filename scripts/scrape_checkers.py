@@ -203,94 +203,111 @@ def get_price(price_old, price_current):
     else:
         return "no price available"
 
-def scrape_page(base_url, page, existing_data, current_index, save_filename='products.csv'):
-    options = Options()
-    options.add_argument("--headless=new")
-    options.add_argument("--enable-unsafe-swiftshader")  # Enable fallback for software WebGL rendering
-    options.add_argument(f"user-agent={get_random_user_agent()}")
+def scrape_page(base_url, page, existing_data, current_index, save_filename='products.csv', max_retries=3):
+    """
+    Scrape a specific page and retry if an error occurs.
 
-    # Enable GPU acceleration
-    options.add_argument("--enable-gpu")
-    options.add_argument("--enable-webgl")
-    options.add_argument("--ignore-gpu-blocklist")  # Force GPU acceleration
+    Args:
+        base_url (str): The base URL for scraping.
+        page (int): The page number to scrape.
+        existing_data (dict): Existing data to check for duplicates.
+        current_index (int): The current index for products.
+        save_filename (str): The file to save scraped data.
+        max_retries (int): Maximum number of retry attempts.
 
-    # Reduce memory usage and improve performance
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-extensions")
-    options.add_argument("--disable-notifications")
-    options.add_argument("--disable-infobars")
-
-    # Optimize image loading
-    options.add_argument("--blink-settings=imagesEnabled=false")  # Only if you don't need page images
-    options.add_experimental_option("prefs", {
-        "profile.managed_default_content_settings.images": 2,  # 2 = block images, 1 = allow images
-    })
-
-    # Memory management
-    options.add_argument("--disable-application-cache")
-    options.add_argument("--aggressive-cache-discard")
-    options.add_argument("--disable-browser-side-navigation")
-
-    driver_path = r"path_to_driver"  # Update path
-    service = Service(driver_path)
-    driver = webdriver.Chrome(service=service, options=options)
-
-    scraped_data = []
-    try:
-        print(f"scraping page {page}")
-        url = f"{base_url}&page={page}"
-        driver.get(url)
-        time.sleep(5)  # Adjust delay if necessary
-
-        specials = driver.find_elements(By.CLASS_NAME, 'item-product')
-        for index, item in enumerate(specials):
-            current_index += 1
-            product_name = item.find_element(By.CLASS_NAME, 'item-product__name').text.strip()
-            try:
-                price_old = item.find_element(By.CLASS_NAME, 'before').text.strip()
-            except:
-                price_old = None
-            price_current = item.find_element(By.CLASS_NAME, 'now').text.strip()
-
-            # Check if product already exists
-            existing_product = existing_data.get(product_name)
-            if existing_product:
-                if existing_product['retailer'] == 'Checkers':
-                    # Don't re-upload the image
-                    product_image_url = existing_product['image_url']
-            else:
-                # New product
-                images = item.find_elements(By.CSS_SELECTOR, 'img')
-                product_image = next(
-                    (img.get_attribute('src') for img in images if "discovery-vitality" not in img.get_attribute('src')), None
-                )
-
-                product_image_url = None
-                if product_image:
-                    normalized = unicodedata.normalize('NFKD', product_name.replace(" ", "_")).encode('ascii', 'ignore').decode('ascii')
-                    sanitized = re.sub(r'[^\w\.-]', '_', normalized)
-                    file_name = f"checkers_image_{sanitized}.jpg"
-                    save_path = os.path.join(LOCAL_FOLDER_PATH, file_name)
-                    os.makedirs(LOCAL_FOLDER_PATH, exist_ok=True)
-                    if download_image(product_image, save_path):
-                        remote_path = f"{REMOTE_FOLDER_PATH}{file_name}"
-                        product_image_url = upload_file_to_supabase(save_path, BUCKET_NAME, remote_path)
-
-            scraped_data.append({
-                'index': str((page*20) - 1 + current_index),
-                'name': product_name,
-                'price': get_price(price_old, price_current),
-                'promotion_price': price_current if price_old else "No promo",
-                'retailer': "Checkers",
-                'image_url': product_image_url,
+    Returns:
+        tuple: (scraped data as a list, updated current index)
+    """
+    retries = 0
+    while retries <= max_retries:
+        try:
+            # Configure Selenium options
+            options = Options()
+            options.add_argument("--headless=new")
+            options.add_argument("--enable-unsafe-swiftshader")
+            options.add_argument(f"user-agent={get_random_user_agent()}")
+            options.add_argument("--enable-gpu")
+            options.add_argument("--enable-webgl")
+            options.add_argument("--ignore-gpu-blocklist")
+            options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-extensions")
+            options.add_argument("--disable-notifications")
+            options.add_argument("--disable-infobars")
+            options.add_argument("--blink-settings=imagesEnabled=false")
+            options.add_experimental_option("prefs", {
+                "profile.managed_default_content_settings.images": 2,
             })
-        # Save incrementally after each page
-        save_to_csv(scraped_data, filename=save_filename)
-    finally:
-        driver.quit()
+            options.add_argument("--disable-application-cache")
+            options.add_argument("--aggressive-cache-discard")
+            options.add_argument("--disable-browser-side-navigation")
 
-    return scraped_data, current_index
+            driver_path = r"path\to\chromedriver.exe"
+            service = Service(driver_path)
+            driver = webdriver.Chrome(service=service, options=options)
+
+            scraped_data = []
+            try:
+                print(f"Scraping page {page}")
+                url = f"{base_url}&page={page}"
+                driver.get(url)
+                time.sleep(5)  # Adjust delay if necessary
+
+                specials = driver.find_elements(By.CLASS_NAME, 'item-product')
+                for index, item in enumerate(specials):
+                    current_index += 1
+                    product_name = item.find_element(By.CLASS_NAME, 'item-product__name').text.strip()
+                    try:
+                        price_old = item.find_element(By.CLASS_NAME, 'before').text.strip()
+                    except:
+                        price_old = None
+                    price_current = item.find_element(By.CLASS_NAME, 'now').text.strip()
+
+                    existing_product = existing_data.get(product_name)
+                    if existing_product:
+                        product_image_url = existing_product['image_url']
+                    else:
+                        images = item.find_elements(By.CSS_SELECTOR, 'img')
+                        product_image = next(
+                            (img.get_attribute('src') for img in images if "discovery-vitality" not in img.get_attribute('src')),
+                            None
+                        )
+
+                        product_image_url = None
+                        if product_image:
+                            normalized = unicodedata.normalize('NFKD', product_name.replace(" ", "_")).encode('ascii', 'ignore').decode('ascii')
+                            sanitized = re.sub(r'[^\w\.-]', '_', normalized)
+                            file_name = f"checkers_image_{sanitized}.jpg"
+                            save_path = os.path.join(LOCAL_FOLDER_PATH, file_name)
+                            os.makedirs(LOCAL_FOLDER_PATH, exist_ok=True)
+                            if download_image(product_image, save_path):
+                                remote_path = f"{REMOTE_FOLDER_PATH}{file_name}"
+                                product_image_url = upload_file_to_supabase(save_path, BUCKET_NAME, remote_path)
+
+                    scraped_data.append({
+                        'index': str((page * 20) - 1 + current_index),
+                        'name': product_name,
+                        'price': get_price(price_old, price_current),
+                        'promotion_price': price_current if price_old else "No promo",
+                        'retailer': "Checkers",
+                        'image_url': product_image_url,
+                    })
+                # Save data incrementally
+                save_to_csv(scraped_data, filename=save_filename)
+                return scraped_data, current_index
+
+            finally:
+                driver.quit()
+
+        except Exception as e:
+            retries += 1
+            print(f"Error scraping page {page}: {e}")
+            if retries <= max_retries:
+                print(f"Retrying... Attempt {retries} of {max_retries}")
+                time.sleep(2 ** retries)  # Exponential backoff
+            else:
+                print(f"Failed to scrape page {page} after {max_retries} retries.")
+                return [], current_index
 
 def get_optimal_threads():
     # Get the number of logical processors
