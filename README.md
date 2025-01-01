@@ -17,11 +17,12 @@ This repository contains Python scripts for web scraping product information fro
   - requests-html
   - beautifulsoup4
   - pandas
+  - psutil
 
 You can install the required packages using pip:
 
 ```
-pip install requests requests-html beautifulsoup4 pandas
+pip install requests requests-html beautifulsoup4 pandas psutil
 ```
 
 ## Usage
