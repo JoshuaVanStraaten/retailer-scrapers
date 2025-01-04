@@ -7,7 +7,7 @@ import os
 class ScrapeService(win32serviceutil.ServiceFramework):
     _svc_name_ = "DailyScrapeService"
     _svc_display_name_ = "Daily Scrape Service"
-    _svc_description_ = "Runs scrape_checkers and scrape_pnp daily at 6 AM with backups."
+    _svc_description_ = "Runs scrape_checkers, scrape_shoprite and scrape_pnp daily at 6 AM with backups."
 
     def __init__(self, args):
         win32serviceutil.ServiceFramework.__init__(self, args)

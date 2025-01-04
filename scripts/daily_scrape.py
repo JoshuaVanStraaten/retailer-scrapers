@@ -5,6 +5,7 @@ from datetime import datetime
 
 # Configuration
 SCRAPE_CHECKERS_CMD = ["python", "scrape_checkers.py"]
+SCRAPE_SHOPRITE_CMD = ["python", "scrape_shoprite.py"]
 SCRAPE_PNP_CMD = ["python", "scrape_pnp.py", "--timeout", "10", "--url", "https://www.pnp.co.za/c/pnpbase"]
 PRODUCTS_FILE = "products.csv"
 BACKUP_FOLDER = "backup"
@@ -32,19 +33,20 @@ def backup_products_file():
 
 def run_scrapers():
     """
-    Run the scrape_checkers and scrape_pnp scripts simultaneously.
+    Run the scrape_checkers, scrape_shoprite and scrape_pnp scripts simultaneously.
     """
-    # Launch both scripts
+    # Launch scripts
     processes = [
         subprocess.Popen(SCRAPE_CHECKERS_CMD),
         subprocess.Popen(SCRAPE_PNP_CMD),
+        subprocess.Popen(SCRAPE_SHOPRITE_CMD),
     ]
 
-    # Wait for both to complete
+    # Wait for processes to complete
     for process in processes:
         process.wait()
 
-    print("Both scrapers have completed.")
+    print("All scrapers have completed.")
 
 if __name__ == "__main__":
     print("Starting daily scrape process...")
