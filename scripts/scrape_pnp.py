@@ -106,7 +106,7 @@ class Scraper:
             'curr': 'ZAR'
         }
 
-        print(f"Requesting page {page_number}")
+        print(f"Requesting page {page_number} of Pnp")
         retry_count = 0
 
         while retry_count < max_retries:
@@ -254,7 +254,7 @@ class Scraper:
             print(f"Error upserting to Supabase: {e}")
 
 
-    def run(self, filename='products.csv'):
+    def run(self, filename='products_pnp.csv'):
         """
         Run the scraping process, collecting data from multiple pages.
 
@@ -322,12 +322,14 @@ class Scraper:
             #         break
 
         # Load data from the updated CSV
-        new_data = self.load_existing_data('products.csv')
+        new_data = self.load_existing_data('products_pnp.csv')
 
         # Upsert the data to Supabase
         try:
-            self.upsert_to_supabase(list(new_data.values()))
-            print(f"Scraping complete. {len(new_data.values())} products scraped and saved to '{filename}'.")
+            # Filter new_data to include only rows where 'retailer' == 'Pick n Pay'
+            filtered_data = {name: details for name, details in new_data.items() if details.get('retailer') == 'Pick n Pay'}
+            self.upsert_to_supabase(list(filtered_data.values()))
+            print(f"Scraping complete. {len(filtered_data.values())} products scraped and saved to '{filename}'.")
         except Exception as e:
             print(f"Error during Supabase upsert: {e}")
         print("Scraping process complete.")

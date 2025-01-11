@@ -1,7 +1,4 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
 import random
 import time
 import math
@@ -16,6 +13,7 @@ import requests
 from datetime import datetime
 import unicodedata
 import mimetypes
+import json
 
 # Constants
 SUPABASE_URL = "<supabase_url>"
@@ -203,7 +201,7 @@ def get_price(price_old, price_current):
     else:
         return "no price available"
 
-def scrape_page(base_url, page, existing_data, current_index, save_filename='products.csv', max_retries=3):
+def scrape_page(base_url, page, existing_data, current_index, save_filename='products_checkers.csv', max_retries=0):
     """
     Scrape a specific page and retry if an error occurs.
 
@@ -221,83 +219,93 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
     retries = 0
     while retries <= max_retries:
         try:
-            # Configure Selenium options
-            options = Options()
-            options.add_argument("--headless=new")
-            options.add_argument("--enable-unsafe-swiftshader")
-            options.add_argument(f"user-agent={get_random_user_agent()}")
-            options.add_argument("--enable-gpu")
-            options.add_argument("--enable-webgl")
-            options.add_argument("--ignore-gpu-blocklist")
-            options.add_argument("--disable-dev-shm-usage")
-            options.add_argument("--no-sandbox")
-            options.add_argument("--disable-extensions")
-            options.add_argument("--disable-notifications")
-            options.add_argument("--disable-infobars")
-            options.add_argument("--blink-settings=imagesEnabled=false")
-            options.add_experimental_option("prefs", {
-                "profile.managed_default_content_settings.images": 2,
-            })
-            options.add_argument("--disable-application-cache")
-            options.add_argument("--aggressive-cache-discard")
-            options.add_argument("--disable-browser-side-navigation")
+            url = f"{base_url}&page={page}"
+            headers = {"User-Agent": get_random_user_agent()}
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()  # Raise an HTTPError for bad responses
 
-            driver_path = r"path\to\chromedriver.exe"
-            service = Service(driver_path)
-            driver = webdriver.Chrome(service=service, options=options)
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            json_data = soup.select('.productListJSON')
+            json_data = json_data[0].text
+
+            products = soup.select('.item-product')  # CSS selector for product items
 
             scraped_data = []
-            try:
-                print(f"Scraping page {page}")
-                url = f"{base_url}&page={page}"
-                driver.get(url)
-                time.sleep(5)  # Adjust delay if necessary
+            print(f"Scraping page {page} of Checkers")
+            time.sleep(5)  # Adjust delay if necessary
 
-                specials = driver.find_elements(By.CLASS_NAME, 'item-product')
-                for index, item in enumerate(specials):
-                    current_index += 1
-                    product_name = item.find_element(By.CLASS_NAME, 'item-product__name').text.strip()
-                    try:
-                        price_old = item.find_element(By.CLASS_NAME, 'before').text.strip()
-                    except:
-                        price_old = None
-                    price_current = item.find_element(By.CLASS_NAME, 'now').text.strip()
+            for item in products:
+                current_index += 1
+                product_name = item.select_one('.item-product__name').get_text(strip=True)
+                price_old = item.select_one('.before').get_text(strip=True) if item.select_one('.before') else None
+                price_current = item.select_one('.now').get_text(strip=True) if item.select_one('.now') else None
 
-                    existing_product = existing_data.get(product_name)
-                    if existing_product:
-                        product_image_url = existing_product['image_url']
-                    else:
-                        images = item.find_elements(By.CSS_SELECTOR, 'img')
-                        product_image = next(
-                            (img.get_attribute('src') for img in images if "discovery-vitality" not in img.get_attribute('src')),
-                            None
-                        )
+                # Extract product image URL
+                existing_product = existing_data.get(product_name)
+                if existing_product:
+                    product_image_url = existing_product['image_url']
+                else:
+                    images = item.select('img')
+                    product_image = next(
+                        (img.get('data-original-src') for img in images if img.get('data-original-src') and "discovery-vitality" not in img.get('data-original-src')),
+                        None
+                    )
 
-                        product_image_url = None
-                        if product_image:
-                            normalized = unicodedata.normalize('NFKD', product_name.replace(" ", "_")).encode('ascii', 'ignore').decode('ascii')
-                            sanitized = re.sub(r'[^\w\.-]', '_', normalized)
-                            file_name = f"checkers_image_{sanitized}.jpg"
-                            save_path = os.path.join(LOCAL_FOLDER_PATH, file_name)
-                            os.makedirs(LOCAL_FOLDER_PATH, exist_ok=True)
-                            if download_image(product_image, save_path):
-                                remote_path = f"{REMOTE_FOLDER_PATH}{file_name}"
-                                product_image_url = upload_file_to_supabase(save_path, BUCKET_NAME, remote_path)
+                    if not product_image.startswith('https://www.checkers.co.za'):
+                        product_image = 'https://www.checkers.co.za' + product_image  # Append the prefix if it's missing
 
-                    scraped_data.append({
-                        'index': str((page * 20) - 1 + current_index),
-                        'name': product_name,
-                        'price': get_price(price_old, price_current),
-                        'promotion_price': price_current if price_old else "No promo",
-                        'retailer': "Checkers",
-                        'image_url': product_image_url,
-                    })
-                # Save data incrementally
-                save_to_csv(scraped_data, filename=save_filename)
-                return scraped_data, current_index
+                    product_image_url = None
+                    if product_image:
+                        normalized = unicodedata.normalize('NFKD', product_name.replace(" ", "_")).encode('ascii', 'ignore').decode('ascii')
+                        sanitized = re.sub(r'[^\w\.-]', '_', normalized)
+                        file_name = f"checkers_image_{sanitized}.jpg"
+                        save_path = os.path.join(LOCAL_FOLDER_PATH, file_name)
+                        os.makedirs(LOCAL_FOLDER_PATH, exist_ok=True)
+                        if download_image(product_image, save_path):
+                            remote_path = f"{REMOTE_FOLDER_PATH}{file_name}"
+                            product_image_url = upload_file_to_supabase(save_path, BUCKET_NAME, remote_path)
 
-            finally:
-                driver.quit()
+                scraped_data.append({
+                    'index': str((page * 20) - 1 + current_index),
+                    'name': product_name,
+                    'price': get_price(price_old, price_current),
+                    'promotion_price': price_current if price_old else "No promo",
+                    'retailer': "Checkers",
+                    'image_url': product_image_url,
+                })
+
+                # Use API to get Promotion information
+                headers = {
+                    'accept': 'text/plain, */*; q=0.01',
+                    'accept-language': 'en-US,en;q=0.9',
+                    'cookie': 'anonymous-consents=%5B%5D; cookie-notification=NOT_ACCEPTED; cookie-promo-alerts-popup=true; webp_supported=true; _tt_enable_cookie=1; _ttp=rHYP5a1kSS55XOSC_uNsoaQCjC-; _ce.s=v~d8caea56a1de38c3b97cd4a870625640508b025f~lcw~1723260152930~lva~1723260152930~vpv~1~lcw~1723260152932; _clck=iu85bv%7C2%7Cfo7%7C0%7C1656; checkersZA-cart=bf455b3e-c776-4d28-916a-1f54ea1a9187; _ga_SY8LS918MZ=GS1.3.1723260153.2.1.1723260928.27.0.0; checkersZA-preferredStore=58142; _ga=GA1.3.1138479441.1720952525; _uetvid=eb6e1d6041ca11efad7751587ec4a050; _ga_KRLJETD70M=GS1.1.1723260152.2.1.1723260970.60.0.0; JSESSIONID=Y4-16171c99-bb40-4ace-b4b7-5018ec426b1e; geolocation={%22latitude%22:-26.0079616%2C%22longitude%22:27.9937024%2C%22accuracy%22:59903.330966097696}; AWSALB=IndBzbnAPMh02xGd2AL7EjC+0votOOqAbVYJDlpgXVFiouTKSZ1+3u37xjQDFz7oWNgUcOoq7p0HHvsXNpI3QZI3wkCqJbtlEOeBfikq4AYnGgv6c9NvueYF1KAs; AWSALBCORS=IndBzbnAPMh02xGd2AL7EjC+0votOOqAbVYJDlpgXVFiouTKSZ1+3u37xjQDFz7oWNgUcOoq7p0HHvsXNpI3QZI3wkCqJbtlEOeBfikq4AYnGgv6c9NvueYF1KAs',
+                    'priority': 'u=1, i',
+                    'referer': f'https://www.checkers.co.za/c-2413/All-Departments/Food?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page={page}',
+                    'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"Windows"',
+                    'sec-fetch-dest': 'empty',
+                    'sec-fetch-mode': 'cors',
+                    'sec-fetch-site': 'same-origin',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                    'x-requested-with': 'XMLHttpRequest',
+                    'content-type': 'application/json',
+                    'csrftoken': '3b8cdcb6-c751-4d38-8be0-7b4107e11ffd',
+                    'origin': 'https://www.checkers.co.za',
+                }
+
+                response = requests.post('https://www.checkers.co.za/populateProductsWithHeavyAttributes', headers=headers, data=json_data)
+
+                response = json.loads(response.text)
+
+                for scraped_item, result in zip(scraped_data, response):
+                    scraped_item['promotion_price'] = result.get('information')[0].get('salePrice') or 'No promo'
+
+            # Save data incrementally
+            save_to_csv(scraped_data, filename=save_filename)
+            return scraped_data, current_index
+
 
         except Exception as e:
             retries += 1
@@ -324,7 +332,7 @@ def get_optimal_threads():
     return min(optimal_threads, memory_limited_threads)
 
 def scrape_checkers_concurrently(base_url, start_page, end_page, existing_data, starting_index):
-    optimal_threads = 6  # For now just set to 6
+    optimal_threads = 3  # For now just set to 3
     print(f"Using {optimal_threads} threads based on system specs.")
 
     all_results = []
@@ -400,13 +408,13 @@ def upsert_to_supabase(data, batch_size=500):
         print(f"Error upserting to Supabase: {e}")
 
 
-def save_to_csv(product_list, filename='products.csv'):
+def save_to_csv(product_list, filename='products_checkers.csv'):
     """
     Save products to a CSV file, appending data if the file exists, otherwise creating a new file.
 
     Args:
     product_list (list): List of dictionaries containing product information.
-    filename (str): The name of the CSV file (default: 'products.csv').
+    filename (str): The name of the CSV file (default: 'products_checkers.csv').
     """
     if not product_list:
         print("No data to save.")
@@ -435,13 +443,15 @@ def save_to_csv(product_list, filename='products.csv'):
 if __name__ == "__main__":
     base_url = "https://www.checkers.co.za/c-2256/All-Departments?q=%3Arelevance"
     existing_data = load_existing_data('products_old.csv')
-    starting_index = get_last_index('products.csv')
+    # starting_index = get_last_index('products_checkers.csv')
     scraped_data = scrape_checkers_concurrently(base_url, start_page=0, end_page=375,
-                                                existing_data=existing_data, starting_index=starting_index)
+                                                existing_data=existing_data, starting_index=0)
 
     if scraped_data:
-        new_data = load_existing_data('products.csv')
-        upsert_to_supabase(list(new_data.values()))
+        new_data = load_existing_data('products_checkers.csv')
+        # Filter new_data to include only rows where 'retailer' == 'Checkers'
+        filtered_data = {name: details for name, details in new_data.items() if details.get('retailer') == 'Checkers'}
+        upsert_to_supabase(list(filtered_data.values()))
         print("Data saved and updated.")
 
     else:

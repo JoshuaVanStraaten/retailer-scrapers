@@ -52,7 +52,7 @@ Ensure all scripts are located in the `scripts` directory of the repository.---
 ### 2.2 Install Required Python Packages
 Run the following commands:
 ```sh
-pip install pywin32 selenium pandas supabase pytz requests svglib reportlab
+pip install pywin32 selenium pandas supabase pytz requests svglib reportlab psutil
 ```
 
 **Notes:**
@@ -110,8 +110,8 @@ Replace `<your_supabase_key>` with:
 ## 5. Install the Service
 
 ### 5.1 Configure the Service Script
-1. Ensure the `ScrapeService` script is in the same folder as the scraping scripts.
-2. Update the paths in `ScrapeService` if necessary:
+1. Ensure the `scrape_service` script is in the same folder as the scraping scripts.
+2. Update the paths in `scrape_service` if necessary:
    - `daily_scrape.py` should be in the same directory.
 
 ### 5.2 Install the Service
@@ -120,8 +120,8 @@ Replace `<your_supabase_key>` with:
 2. Navigate to the script folder.
 3. Run:
    ```sh
-   python ScrapeService.py install
-   python ScrapeService.py start
+   python scrape_service.py install
+   python scrape_service.py start
    ```
 
 **Common Issues:**
