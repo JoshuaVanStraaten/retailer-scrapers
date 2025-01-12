@@ -116,13 +116,17 @@ class Scraper:
                 'image_url': result.get('attributes').get('p_externalImageReference'),
             }
 
+            # Ensure there are no Nan values in the product details
+            if product['name'] == 'FFF_Water_Content_Card_Wk43':
+                continue
+
             # Append the product to the products list
             products.append(product)
 
         # Create a pandas dataframe from the products list
         df = pd.DataFrame(products)
 
-        return df, count
+        return df, page_end
 
     def load_existing_data(self, csv_file):
         """
@@ -222,6 +226,9 @@ class Scraper:
             df.index = df.index + self.last_index
             df.index.name = 'index'
 
+            # Remove rows with NaN values - This can be removed once error handling logic is added
+            df.dropna(inplace=True)
+
             # Check if the file exists
             file_exists = os.path.isfile('products_woolies.csv')
 
@@ -247,10 +254,10 @@ class Scraper:
             # Update the last index for next run
             self.last_index = self.last_index + len(df)
             page_number += 1
+            sleep(10)
 
             # Add a break condition
             if page_number > page_end:
-            # if page_number > 0:
                 break
 
         # Load data from the updated CSV
@@ -303,3 +310,4 @@ for category, code in categories.items():
 
 
 # TO-DO: Add image uploads to Supabase
+# TO-DO: Add error handling logic for Nan values after load csv prior to upsert
