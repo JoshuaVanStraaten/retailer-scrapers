@@ -88,7 +88,7 @@ def verify_file_in_supabase(bucket_name, remote_path):
     try:
         files = supabase.storage.from_(bucket_name).list(
             REMOTE_FOLDER_PATH,
-            {"limit": 100, "offset": 0, "sortBy": {"column": "name", "order": "desc"}},
+            {"limit": 20000, "offset": 0, "sortBy": {"column": "name", "order": "desc"}},
         )
         for file in files:
             if file['name'] == remote_path.removeprefix(REMOTE_FOLDER_PATH):
@@ -256,15 +256,22 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                         product_image = 'https://www.checkers.co.za' + product_image  # Append the prefix if it's missing
 
                     product_image_url = None
+                    normalized = unicodedata.normalize('NFKD', product_name.replace(" ", "_")).encode('ascii', 'ignore').decode('ascii')
+                    sanitized = re.sub(r'[^\w\.-]', '_', normalized)
+                    file_name = f"checkers_image_{sanitized}.jpg"
+                    save_path = os.path.join(LOCAL_FOLDER_PATH, file_name)
+                    remote_path = f"{REMOTE_FOLDER_PATH}{file_name}"
                     if product_image:
-                        normalized = unicodedata.normalize('NFKD', product_name.replace(" ", "_")).encode('ascii', 'ignore').decode('ascii')
-                        sanitized = re.sub(r'[^\w\.-]', '_', normalized)
-                        file_name = f"checkers_image_{sanitized}.jpg"
-                        save_path = os.path.join(LOCAL_FOLDER_PATH, file_name)
                         os.makedirs(LOCAL_FOLDER_PATH, exist_ok=True)
                         if download_image(product_image, save_path):
-                            remote_path = f"{REMOTE_FOLDER_PATH}{file_name}"
                             product_image_url = upload_file_to_supabase(save_path, BUCKET_NAME, remote_path)
+
+                    if product_image_url is None:
+                        if verify_file_in_supabase(BUCKET_NAME, remote_path):
+                            print(f"File Exists: {remote_path}")
+                            product_image_url = upload_file_to_supabase(save_path, BUCKET_NAME, remote_path)
+                        else:
+                            print(f"Unable to identify image URL for {product_name}")
 
                 scraped_data.append({
                     'index': str((page * 20) - 1 + current_index),

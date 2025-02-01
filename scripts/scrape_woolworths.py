@@ -213,37 +213,44 @@ class Scraper:
             # Get response from the server
             response = self.request(page_number)
 
-            response, page_end = self.process(response)
+            # Process the response and determine the total number of pages
+            current_df, page_end = self.process(response)
 
-            # Append the response to the dfs list
-            dfs.append(response)
+            # Append the current page's DataFrame to the list of all pages
+            dfs.append(current_df)
 
-            # Concatenate the dataframes in the dfs list
+            # Concatenate all pages' data into a single DataFrame
             df = pd.concat(dfs, ignore_index=True)
 
-            # Set the starting index to 29000
+            # Set the starting index to 29000 for the concatenated DataFrame
             self.last_index = self.last_index if self.last_index else 29000
             df.index = df.index + self.last_index
             df.index.name = 'index'
 
+            # Apply the same index logic to the current DataFrame (`current_df`)
+            # Calculate its starting index based on the overall last index
+            current_start_index = self.last_index
+            current_df.index = range(current_start_index, current_start_index + len(current_df))
+            current_df.index.name = 'index'
+
             # Remove rows with NaN values - This can be removed once error handling logic is added
-            df.dropna(inplace=True)
+            current_df.dropna(inplace=True)
 
             # Check if the file exists
             file_exists = os.path.isfile('products_woolies.csv')
 
-            # Save the processed data to the CSV file
+            # Save the current page's DataFrame (with the correct index) to the CSV file
             try:
-                df.to_csv(
+                current_df.to_csv(
                     'products_woolies.csv',
                     mode='a' if file_exists else 'w',
-                    header=not file_exists,
+                    header=not file_exists,  # Write header only if the file doesn't exist
                     encoding='utf-8'
                 )
                 print(f"Page {page_number} data successfully saved to products_woolies.csv.")
             except UnicodeEncodeError:
-                print(f"Warning: Failed to save products_woolies.csv with UTF-8 encoding. Trying 'latin1'.")
-                df.to_csv(
+                print("UTF-8 encoding failed. Retrying with 'latin1'.")
+                current_df.to_csv(
                     'products_woolies.csv',
                     mode='a' if file_exists else 'w',
                     header=not file_exists,
@@ -251,18 +258,19 @@ class Scraper:
                 )
 
             # Increment the page number
-            # Update the last index for next run
-            self.last_index = self.last_index + len(df)
+            # Update the last index for the next run
+            self.last_index += len(current_df)
             page_number += 1
-            sleep(10)
+            sleep(5)  # Optional: Add delay to avoid rate-limiting
 
-            # Add a break condition
+            # Break the loop if all pages have been scraped
             if page_number > page_end:
                 break
 
         # Load data from the updated CSV
         new_data = self.load_existing_data('products_woolies.csv')
-        # Filter new_data to include only rows where 'retailer' == 'woolworths'
+
+        # Filter new_data to include only rows where 'retailer' == 'Woolworths'
         filtered_data = {name: details for name, details in new_data.items() if details.get('retailer') == 'Woolworths'}
 
         # Upsert the data to Supabase
