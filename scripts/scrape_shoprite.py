@@ -201,7 +201,7 @@ def get_price(price_old, price_current):
     else:
         return "no price available"
 
-def scrape_page(base_url, page, existing_data, current_index, save_filename='products_shoprite.csv', max_retries=0):
+def scrape_page(base_url, page, existing_data, current_index, save_filename='products_shoprite.csv', max_retries=3):
     """
     Scrape a specific page and retry if an error occurs.
 
@@ -287,18 +287,18 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                     'accept': 'text/plain, */*; q=0.01',
                     'accept-language': 'en-US,en;q=0.9',
                     'content-type': 'application/json',
-                    'cookie': 'anonymous-consents=%5B%5D; shopriteZA-preferredStore=1894; cookie-notification=NOT_ACCEPTED; cookie-promo-alerts-popup=true; webp_supported=true; _hjSessionUser_502443=eyJpZCI6IjdiYTczNzZjLWI1ZGQtNTZjNS1hMTg1LWQ3ZmRhNTVkOThmOSIsImNyZWF0ZWQiOjE3MjA5NTM0OTM1NTMsImV4aXN0aW5nIjp0cnVlfQ==; _ce.s=v~167bd267b8975c30713da39501125949bc18ded1~lcw~1720953493683~lva~1720953493683~vpv~0~lcw~1720953493684; _tt_enable_cookie=1; _ttp=bvckI6r_BWdOUDYHZyu2bfp4Qxt; _ga=GA1.3.697118611.1720953493; _ga_P4HXTRVEMT=GS1.1.1720953493.1.1.1720954310.60.0.0; JSESSIONID=Y6-b13e04c0-07a0-4e05-b3c7-4fd4365de358; AWSALB=6elClGKIL89yfpzOok0ZkQs1hIqIfPh2iTuQc8UFmGie8uDb5v+iEWtJ2UgFEW6+il3fakjLN8+JsMhlqyQE9JOj1DWZnP0vnIGXoBLYW1w5B1XOGXTJQkPMPnvD; AWSALBCORS=6elClGKIL89yfpzOok0ZkQs1hIqIfPh2iTuQc8UFmGie8uDb5v+iEWtJ2UgFEW6+il3fakjLN8+JsMhlqyQE9JOj1DWZnP0vnIGXoBLYW1w5B1XOGXTJQkPMPnvD',
-                    'csrftoken': '4f5ff5d3-5045-4084-80e9-0e760a5ed06b',
+                    'cookie': 'anonymous-consents=%5B%5D; shopriteZA-preferredStore=1894; cookie-notification=NOT_ACCEPTED; cookie-promo-alerts-popup=true; webp_supported=true; _hjSessionUser_502443=eyJpZCI6IjdiYTczNzZjLWI1ZGQtNTZjNS1hMTg1LWQ3ZmRhNTVkOThmOSIsImNyZWF0ZWQiOjE3MjA5NTM0OTM1NTMsImV4aXN0aW5nIjp0cnVlfQ==; _ce.s=v~167bd267b8975c30713da39501125949bc18ded1~lcw~1720953493683~lva~1720953493683~vpv~0~lcw~1720953493684; _tt_enable_cookie=1; _ttp=bvckI6r_BWdOUDYHZyu2bfp4Qxt; _ga=GA1.3.697118611.1720953493; _ga_P4HXTRVEMT=GS1.1.1720953493.1.1.1720954310.60.0.0; JSESSIONID=Y5-bd402d84-a8a1-42e1-85dd-b2b2a15ff5d0; AWSALB=zLS9f+Kn04AnHlA5l1nmWXYRCyLNMEAl3vXEo+rh5bY/igAahX5qHn9Qc6PSj+qHnjQYdKDWp+LyWjBTKIN2vXyv5MbucH2yTiI765YU/x4XFJ16MvISV/iIYl55; AWSALBCORS=zLS9f+Kn04AnHlA5l1nmWXYRCyLNMEAl3vXEo+rh5bY/igAahX5qHn9Qc6PSj+qHnjQYdKDWp+LyWjBTKIN2vXyv5MbucH2yTiI765YU/x4XFJ16MvISV/iIYl55',
+                    'csrftoken': 'e663554b-74e0-4953-96e1-dae222a626ac',
                     'origin': 'https://www.shoprite.co.za',
                     'priority': 'u=1, i',
                     'referer': f'https://www.shoprite.co.za/c-2256/All-Departments?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page={page}',
-                    'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+                    'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
                     'sec-ch-ua-mobile': '?0',
                     'sec-ch-ua-platform': '"Windows"',
                     'sec-fetch-dest': 'empty',
                     'sec-fetch-mode': 'cors',
                     'sec-fetch-site': 'same-origin',
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
                     'x-requested-with': 'XMLHttpRequest',
                 }
 
@@ -462,3 +462,7 @@ if __name__ == "__main__":
 
     else:
         print("No new data scraped.")
+
+# TO-DO: Use a default image if the image cannot be found
+#        Ensure logic is added so when the old data is compared
+#        it will retry downloading.

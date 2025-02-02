@@ -201,7 +201,7 @@ def get_price(price_old, price_current):
     else:
         return "no price available"
 
-def scrape_page(base_url, page, existing_data, current_index, save_filename='products_checkers.csv', max_retries=0):
+def scrape_page(base_url, page, existing_data, current_index, save_filename='products_checkers.csv', max_retries=3):
     """
     Scrape a specific page and retry if an error occurs.
 
@@ -286,20 +286,20 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                 headers = {
                     'accept': 'text/plain, */*; q=0.01',
                     'accept-language': 'en-US,en;q=0.9',
-                    'cookie': 'anonymous-consents=%5B%5D; cookie-notification=NOT_ACCEPTED; cookie-promo-alerts-popup=true; webp_supported=true; _tt_enable_cookie=1; _ttp=rHYP5a1kSS55XOSC_uNsoaQCjC-; _ce.s=v~d8caea56a1de38c3b97cd4a870625640508b025f~lcw~1723260152930~lva~1723260152930~vpv~1~lcw~1723260152932; _clck=iu85bv%7C2%7Cfo7%7C0%7C1656; checkersZA-cart=bf455b3e-c776-4d28-916a-1f54ea1a9187; _ga_SY8LS918MZ=GS1.3.1723260153.2.1.1723260928.27.0.0; checkersZA-preferredStore=58142; _ga=GA1.3.1138479441.1720952525; _uetvid=eb6e1d6041ca11efad7751587ec4a050; _ga_KRLJETD70M=GS1.1.1723260152.2.1.1723260970.60.0.0; JSESSIONID=Y4-16171c99-bb40-4ace-b4b7-5018ec426b1e; geolocation={%22latitude%22:-26.0079616%2C%22longitude%22:27.9937024%2C%22accuracy%22:59903.330966097696}; AWSALB=IndBzbnAPMh02xGd2AL7EjC+0votOOqAbVYJDlpgXVFiouTKSZ1+3u37xjQDFz7oWNgUcOoq7p0HHvsXNpI3QZI3wkCqJbtlEOeBfikq4AYnGgv6c9NvueYF1KAs; AWSALBCORS=IndBzbnAPMh02xGd2AL7EjC+0votOOqAbVYJDlpgXVFiouTKSZ1+3u37xjQDFz7oWNgUcOoq7p0HHvsXNpI3QZI3wkCqJbtlEOeBfikq4AYnGgv6c9NvueYF1KAs',
+                    'content-type': 'application/json',
+                    'cookie': 'anonymous-consents=%5B%5D; cookie-notification=NOT_ACCEPTED; cookie-promo-alerts-popup=true; webp_supported=true; _tt_enable_cookie=1; _ttp=rHYP5a1kSS55XOSC_uNsoaQCjC-; _ce.s=v~d8caea56a1de38c3b97cd4a870625640508b025f~lcw~1723260152930~lva~1723260152930~vpv~1~lcw~1723260152932; _clck=iu85bv%7C2%7Cfo7%7C0%7C1656; checkersZA-cart=bf455b3e-c776-4d28-916a-1f54ea1a9187; _ga_SY8LS918MZ=GS1.3.1723260153.2.1.1723260928.27.0.0; checkersZA-preferredStore=58142; _ga=GA1.3.1138479441.1720952525; _uetvid=eb6e1d6041ca11efad7751587ec4a050; _ga_KRLJETD70M=GS1.1.1723260152.2.1.1723260970.60.0.0; JSESSIONID=Y32-267eb386-6125-4db9-97d2-6c26fdb0e0db; geolocation={%22latitude%22:-25.7753088%2C%22longitude%22:28.1935872%2C%22accuracy%22:75806.07849589434}; AWSALB=4V+Vni6cQ63tpgzrV1mjnFfauNIFcrVpu0iRlODLpEXzD9wZ3VTX+ozc7GN/xmTZym86W9gdW1q+HhiCFELQDuZTvuIylAt4l5HNaT88TccEGGm24UFr39BI2k8Z; AWSALBCORS=4V+Vni6cQ63tpgzrV1mjnFfauNIFcrVpu0iRlODLpEXzD9wZ3VTX+ozc7GN/xmTZym86W9gdW1q+HhiCFELQDuZTvuIylAt4l5HNaT88TccEGGm24UFr39BI2k8Z',
+                    'csrftoken': 'bf29ead4-f795-436f-ac7c-5485da77484a',
+                    'origin': 'https://www.checkers.co.za',
                     'priority': 'u=1, i',
                     'referer': f'https://www.checkers.co.za/c-2413/All-Departments/Food?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page={page}',
-                    'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+                    'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
                     'sec-ch-ua-mobile': '?0',
                     'sec-ch-ua-platform': '"Windows"',
                     'sec-fetch-dest': 'empty',
                     'sec-fetch-mode': 'cors',
                     'sec-fetch-site': 'same-origin',
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
                     'x-requested-with': 'XMLHttpRequest',
-                    'content-type': 'application/json',
-                    'csrftoken': '3b8cdcb6-c751-4d38-8be0-7b4107e11ffd',
-                    'origin': 'https://www.checkers.co.za',
                 }
 
                 response = requests.post('https://www.checkers.co.za/populateProductsWithHeavyAttributes', headers=headers, data=json_data)
