@@ -321,6 +321,20 @@ class Scraper:
             #     if response_df.equals(dfs[-2]):
             #         break
 
+        # --- Deduplicate the CSV file ---
+        try:
+            # Attempt to load the CSV using UTF-8 encoding first
+            df = pd.read_csv(filename, index_col=0, encoding='utf-8')
+        except UnicodeDecodeError:
+            print(f"Warning: Failed to load {filename} with UTF-8. Trying 'latin1'.")
+            df = pd.read_csv(filename, index_col=0, encoding='latin1')
+        original_count = len(df)
+        df.drop_duplicates(subset=['name', 'price'], keep='first', inplace=True)
+        deduped_count = len(df)
+        print(f"Dropped {original_count - deduped_count} duplicate rows. {deduped_count} rows remain.")
+        df.to_csv(filename, encoding='utf-8')
+        # --- End deduplication ---
+
         # Load data from the updated CSV
         new_data = self.load_existing_data('products_pnp.csv')
 

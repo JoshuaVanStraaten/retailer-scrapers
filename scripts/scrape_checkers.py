@@ -342,14 +342,18 @@ def scrape_checkers_concurrently(base_url, start_page, end_page, existing_data, 
     optimal_threads = 3  # For now just set to 3
     print(f"Using {optimal_threads} threads based on system specs.")
 
+    visited_pages = set()
     all_results = []
     current_index = starting_index
 
     with ThreadPoolExecutor(optimal_threads) as executor:
-        futures = {
-            executor.submit(scrape_page, base_url, page, existing_data, current_index): page
-            for page in range(start_page, end_page + 1)
-        }
+        futures = {}
+        for page in range(start_page, end_page + 1):
+            if page in visited_pages:
+                print(f"Skipping already visited page {page}")
+                continue
+            visited_pages.add(page)
+            futures[executor.submit(scrape_page, base_url, page, existing_data, current_index)] = page
 
         for future in as_completed(futures):
             try:
@@ -447,6 +451,50 @@ def save_to_csv(product_list, filename='products_checkers.csv'):
         df.to_csv(filename, mode='a', header=False)
         print(f"Data has been appended to {filename}.")
 
+
+def load_and_drop_duplicates(csv_file):
+    """
+    Loads data from a CSV file and drops duplicate rows based on the 'name' and 'price' columns.
+    If duplicate rows are found, the row with a valid promotion_price (not 'No promo') is kept.
+
+    Args:
+        csv_file (str): The path to the CSV file.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the deduplicated data.
+    """
+    try:
+        # Load the CSV file into a DataFrame
+        df = pd.read_csv(csv_file)
+        original_count = len(df)
+        print(f"Loaded {original_count} rows from {csv_file}.")
+
+        # Create a temporary column 'promo_priority'
+        # Set to 0 if promotion_price is not 'No promo' (preferred), 1 otherwise
+        df['promo_priority'] = df['promotion_price'].apply(lambda x: 0 if x != 'No promo' else 1)
+
+        # Sort the DataFrame by 'name', 'price', and 'promo_priority'
+        df = df.sort_values(by=['name', 'price', 'promo_priority'])
+
+        # Drop duplicates based on the 'name' and 'price' columns, keeping the first occurrence
+        deduped_df = df.drop_duplicates(subset=['name', 'price'], keep='first')
+        deduped_count = len(deduped_df)
+        print(f"Dropped {original_count - deduped_count} duplicate rows. {deduped_count} rows remain.")
+
+        # Remove the temporary column before saving
+        deduped_df = deduped_df.drop(columns=['promo_priority'])
+
+        # Overwrite the CSV file with the deduplicated DataFrame
+        deduped_df.to_csv(csv_file, index=False)
+        print(f"Overwritten {csv_file} with deduplicated data.")
+
+        return deduped_df
+
+    except Exception as e:
+        print(f"Error loading data from {csv_file}: {e}")
+        return pd.DataFrame()
+
+
 if __name__ == "__main__":
     base_url = "https://www.checkers.co.za/c-2256/All-Departments?q=%3Arelevance"
     existing_data = load_existing_data('products_old.csv')
@@ -455,6 +503,7 @@ if __name__ == "__main__":
                                                 existing_data=existing_data, starting_index=0)
 
     if scraped_data:
+        load_and_drop_duplicates('products_checkers.csv')
         new_data = load_existing_data('products_checkers.csv')
         # Filter new_data to include only rows where 'retailer' == 'Checkers'
         filtered_data = {name: details for name, details in new_data.items() if details.get('retailer') == 'Checkers'}

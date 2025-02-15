@@ -267,6 +267,20 @@ class Scraper:
             if page_number > page_end:
                 break
 
+        # --- Deduplicate the CSV file before upsert ---
+        try:
+            dedup_df = pd.read_csv('products_woolies.csv', index_col=0, encoding='utf-8')
+        except UnicodeDecodeError:
+            print("Warning: UTF-8 encoding failed during deduplication, trying 'latin1'.")
+            dedup_df = pd.read_csv('products_woolies.csv', index_col=0, encoding='latin1')
+        original_count = len(dedup_df)
+        # Drop duplicates based on 'name' and 'price' columns, keeping the first occurrence
+        dedup_df.drop_duplicates(subset=['name', 'price'], keep='first', inplace=True)
+        deduped_count = len(dedup_df)
+        print(f"Dropped {original_count - deduped_count} duplicate rows. {deduped_count} rows remain in products_woolies.csv.")
+        dedup_df.to_csv('products_woolies.csv', encoding='utf-8')
+        # --- End deduplication ---
+
         # Load data from the updated CSV
         new_data = self.load_existing_data('products_woolies.csv')
 
