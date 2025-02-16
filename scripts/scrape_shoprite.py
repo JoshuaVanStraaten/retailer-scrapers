@@ -306,7 +306,15 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                 response = json.loads(response.text)
 
                 for scraped_item, result in zip(scraped_data, response):
-                    scraped_item['promotion_price'] = result.get('information')[0].get('salePrice') or 'No promo'
+                    sale_price = result.get('information')[0].get('salePrice')
+                    bonus_buys = result.get('information')[0].get('includedInBonusBuys', [])
+                    if sale_price:
+                        scraped_item['promotion_price'] = sale_price
+                    elif bonus_buys:
+                        bundle_price = bonus_buys[0].get('name')
+                        scraped_item['promotion_price'] = bundle_price
+                    else:
+                        scraped_item['promotion_price'] = 'No promo'
 
             # Save data incrementally
             save_to_csv(scraped_data, filename=save_filename)
@@ -515,3 +523,4 @@ if __name__ == "__main__":
 # TO-DO: Use a default image if the image cannot be found
 #        Ensure logic is added so when the old data is compared
 #        it will retry downloading.
+#        For Bundle deals - get the bundle deal page / ignore it

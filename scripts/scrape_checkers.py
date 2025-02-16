@@ -291,7 +291,7 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                     'csrftoken': 'bf29ead4-f795-436f-ac7c-5485da77484a',
                     'origin': 'https://www.checkers.co.za',
                     'priority': 'u=1, i',
-                    'referer': f'https://www.checkers.co.za/c-2413/All-Departments/Food?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page={page}',
+                    'referer': f'https://www.checkers.co.za/c-2256/All-Departments?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page={page}',
                     'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
                     'sec-ch-ua-mobile': '?0',
                     'sec-ch-ua-platform': '"Windows"',
@@ -307,7 +307,15 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                 response = json.loads(response.text)
 
                 for scraped_item, result in zip(scraped_data, response):
-                    scraped_item['promotion_price'] = result.get('information')[0].get('salePrice') or 'No promo'
+                    sale_price = result.get('information')[0].get('salePrice')
+                    bonus_buys = result.get('information')[0].get('includedInBonusBuys', [])
+                    if sale_price:
+                        scraped_item['promotion_price'] = sale_price
+                    elif bonus_buys:
+                        bundle_price = bonus_buys[0].get('name')
+                        scraped_item['promotion_price'] = bundle_price
+                    else:
+                        scraped_item['promotion_price'] = 'No promo'
 
             # Save data incrementally
             save_to_csv(scraped_data, filename=save_filename)
