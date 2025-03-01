@@ -14,6 +14,7 @@ from datetime import datetime
 import unicodedata
 import mimetypes
 import json
+import logging
 
 # Constants
 SUPABASE_URL = "<supabase_url>"
@@ -21,6 +22,21 @@ SUPABASE_KEY = "<supabase_key>"
 LOCAL_FOLDER_PATH = os.path.join('.', 'checkers_images')
 BUCKET_NAME = 'product_images'
 REMOTE_FOLDER_PATH = 'checkers/'
+
+# Setup logging directory
+log_dir = "logs"
+os.makedirs(log_dir, exist_ok=True)
+
+# Generate log filename with timestamp
+log_filename = os.path.join(log_dir, f"checkers_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log")
+
+# Configure logging
+logging.basicConfig(
+    filename=log_filename,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 
 def get_random_user_agent():
     user_agents = [
@@ -222,6 +238,8 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
             url = f"{base_url}&page={page}"
             headers = {"User-Agent": get_random_user_agent()}
             response = requests.get(url, headers=headers)
+            if response.status_code != 200:
+                logging.error(f"Failed request to {url} with status {response.status_code}.")
             response.raise_for_status()  # Raise an HTTPError for bad responses
 
             soup = BeautifulSoup(response.text, "html.parser")
@@ -232,6 +250,7 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
             products = soup.select('.item-product')  # CSS selector for product items
 
             scraped_data = []
+            logging.info(f"Scraping page {page} of Checkers")
             print(f"Scraping page {page} of Checkers")
             time.sleep(5)  # Adjust delay if necessary
 
@@ -283,26 +302,53 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                 })
 
                 # Use API to get Promotion information
+                cookies = {
+                    'anonymous-consents': '%5B%5D',
+                    'cookie-notification': 'NOT_ACCEPTED',
+                    'cookie-promo-alerts-popup': 'true',
+                    'webp_supported': 'true',
+                    '_tt_enable_cookie': '1',
+                    '_ttp': 'rHYP5a1kSS55XOSC_uNsoaQCjC-',
+                    '_ce.s': 'v~d8caea56a1de38c3b97cd4a870625640508b025f~lcw~1723260152930~lva~1723260152930~vpv~1~lcw~1723260152932',
+                    '_clck': 'iu85bv%7C2%7Cfo7%7C0%7C1656',
+                    'checkersZA-cart': 'bf455b3e-c776-4d28-916a-1f54ea1a9187',
+                    '_ga_SY8LS918MZ': 'GS1.3.1723260153.2.1.1723260928.27.0.0',
+                    'checkersZA-preferredStore': '58142',
+                    '_ga': 'GA1.3.1138479441.1720952525',
+                    '_uetvid': 'eb6e1d6041ca11efad7751587ec4a050',
+                    '_ga_KRLJETD70M': 'GS1.1.1723260152.2.1.1723260970.60.0.0',
+                    'JSESSIONID': 'Y34-65bd6964-508b-4135-8fa2-694015ce9ece',
+                    'geolocation': '{%22latitude%22:-25.8537952%2C%22longitude%22:28.248377%2C%22accuracy%22:20}',
+                    'AWSALB': 'I8TXfophcer0DHbBk76K2MmVFGP7+wiwqhge94CA9Le2/Je471gejbMLmZX/AjgtK8rhJu/mhmWz/jLbXHnopqkuHvtDWokoJmzR8fvEV5gpFyH1Qw2fITmqIETl',
+                    'AWSALBCORS': 'I8TXfophcer0DHbBk76K2MmVFGP7+wiwqhge94CA9Le2/Je471gejbMLmZX/AjgtK8rhJu/mhmWz/jLbXHnopqkuHvtDWokoJmzR8fvEV5gpFyH1Qw2fITmqIETl',
+                }
+
                 headers = {
                     'accept': 'text/plain, */*; q=0.01',
                     'accept-language': 'en-US,en;q=0.9',
                     'content-type': 'application/json',
-                    'cookie': 'anonymous-consents=%5B%5D; cookie-notification=NOT_ACCEPTED; cookie-promo-alerts-popup=true; webp_supported=true; _tt_enable_cookie=1; _ttp=rHYP5a1kSS55XOSC_uNsoaQCjC-; _ce.s=v~d8caea56a1de38c3b97cd4a870625640508b025f~lcw~1723260152930~lva~1723260152930~vpv~1~lcw~1723260152932; _clck=iu85bv%7C2%7Cfo7%7C0%7C1656; checkersZA-cart=bf455b3e-c776-4d28-916a-1f54ea1a9187; _ga_SY8LS918MZ=GS1.3.1723260153.2.1.1723260928.27.0.0; checkersZA-preferredStore=58142; _ga=GA1.3.1138479441.1720952525; _uetvid=eb6e1d6041ca11efad7751587ec4a050; _ga_KRLJETD70M=GS1.1.1723260152.2.1.1723260970.60.0.0; JSESSIONID=Y32-267eb386-6125-4db9-97d2-6c26fdb0e0db; geolocation={%22latitude%22:-25.7753088%2C%22longitude%22:28.1935872%2C%22accuracy%22:75806.07849589434}; AWSALB=4V+Vni6cQ63tpgzrV1mjnFfauNIFcrVpu0iRlODLpEXzD9wZ3VTX+ozc7GN/xmTZym86W9gdW1q+HhiCFELQDuZTvuIylAt4l5HNaT88TccEGGm24UFr39BI2k8Z; AWSALBCORS=4V+Vni6cQ63tpgzrV1mjnFfauNIFcrVpu0iRlODLpEXzD9wZ3VTX+ozc7GN/xmTZym86W9gdW1q+HhiCFELQDuZTvuIylAt4l5HNaT88TccEGGm24UFr39BI2k8Z',
-                    'csrftoken': 'bf29ead4-f795-436f-ac7c-5485da77484a',
+                    'csrftoken': 'bc79e50f-4b6e-4a4a-8bf3-3746a0058cbc',
                     'origin': 'https://www.checkers.co.za',
                     'priority': 'u=1, i',
                     'referer': f'https://www.checkers.co.za/c-2256/All-Departments?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page={page}',
-                    'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                    'sec-ch-ua': '"Not(A:Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
                     'sec-ch-ua-mobile': '?0',
                     'sec-ch-ua-platform': '"Windows"',
                     'sec-fetch-dest': 'empty',
                     'sec-fetch-mode': 'cors',
                     'sec-fetch-site': 'same-origin',
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
                     'x-requested-with': 'XMLHttpRequest',
                 }
 
-                response = requests.post('https://www.checkers.co.za/populateProductsWithHeavyAttributes', headers=headers, data=json_data)
+                # response = requests.post('https://www.checkers.co.za/populateProductsWithHeavyAttributes', cookies=cookies, headers=headers, data=json_data)
+                session = requests.Session()
+                session.cookies.update(cookies)
+
+                response = session.post('https://www.checkers.co.za/populateProductsWithHeavyAttributes', headers=headers, data=json_data)
+
+                if response.status_code != 200:
+                    logging.error(f"API request failed with status {response.status_code}. Headers/cookies may need updating.")
 
                 response = json.loads(response.text)
 
@@ -324,12 +370,12 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
 
         except Exception as e:
             retries += 1
-            print(f"Error scraping page {page}: {e}")
+            logging.error(f"Error scraping page {page}: {e}")
             if retries <= max_retries:
-                print(f"Retrying... Attempt {retries} of {max_retries}")
+                logging.info(f"Retrying... Attempt {retries} of {max_retries}")
                 time.sleep(2 ** retries)  # Exponential backoff
             else:
-                print(f"Failed to scrape page {page} after {max_retries} retries.")
+                logging.error(f"Failed to scrape page {page} after {max_retries} retries.")
                 return [], current_index
 
 def get_optimal_threads():
@@ -507,6 +553,7 @@ if __name__ == "__main__":
     base_url = "https://www.checkers.co.za/c-2256/All-Departments?q=%3Arelevance"
     existing_data = load_existing_data('products_old.csv')
     # starting_index = get_last_index('products_checkers.csv')
+    logging.info("Script started.")
     scraped_data = scrape_checkers_concurrently(base_url, start_page=0, end_page=375,
                                                 existing_data=existing_data, starting_index=0)
 
@@ -516,8 +563,9 @@ if __name__ == "__main__":
         # Filter new_data to include only rows where 'retailer' == 'Checkers'
         filtered_data = {name: details for name, details in new_data.items() if details.get('retailer') == 'Checkers'}
         upsert_to_supabase(list(filtered_data.values()))
-        print("Data saved and updated.")
+        logging.info("Data saved and updated.")
 
     else:
-        print("No new data scraped.")
-
+        logging.info("No new data scraped.")
+    logging.info("Script completed.")
+    logging.shutdown()
