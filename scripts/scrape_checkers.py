@@ -356,7 +356,7 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                     sale_price = result.get('information')[0].get('salePrice')
                     bonus_buys = result.get('information')[0].get('includedInBonusBuys', [])
                     if sale_price:
-                        scraped_item['promotion_price'] = sale_price
+                        scraped_item['promotion_price'] = f"R{sale_price}"
                     elif bonus_buys:
                         bundle_price = bonus_buys[0].get('name')
                         scraped_item['promotion_price'] = bundle_price
