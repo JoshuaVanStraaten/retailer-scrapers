@@ -314,26 +314,26 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                     '_ttp': 'bvckI6r_BWdOUDYHZyu2bfp4Qxt',
                     '_ga': 'GA1.3.697118611.1720953493',
                     '_ga_P4HXTRVEMT': 'GS1.1.1720953493.1.1.1720954310.60.0.0',
-                    'JSESSIONID': 'Y23-e32bb6c6-1c78-4f23-9ab5-eaf3e8f949c0',
-                    'AWSALB': 'suuNr3QWouAOLouNrqX0FECM6NQT0y30i711BwRHPU+ZcaR6MhxCayIs/7sx0S0ng3dylNFoIaag6ADZOuNSc/JYmKoirA4GCFiAqsWcRClSb+OxigRBj8MsKWzK',
-                    'AWSALBCORS': 'suuNr3QWouAOLouNrqX0FECM6NQT0y30i711BwRHPU+ZcaR6MhxCayIs/7sx0S0ng3dylNFoIaag6ADZOuNSc/JYmKoirA4GCFiAqsWcRClSb+OxigRBj8MsKWzK',
+                    'JSESSIONID': 'Y25-afd04319-9a94-4d09-92c0-9f8bb5285aaf',
+                    'AWSALB': 'wJ3JZCqxtEsD4+9MSoaiQB+m9C3pBHKF4m0PyrISh3vmiX++I7ygiwdetpk/p3jCYZK+pYhIm2AgLsVVWtXWgi+rVtyCqeKgWsJOivTqCJnWtZnPmiRmeB7xxkfH',
+                    'AWSALBCORS': 'wJ3JZCqxtEsD4+9MSoaiQB+m9C3pBHKF4m0PyrISh3vmiX++I7ygiwdetpk/p3jCYZK+pYhIm2AgLsVVWtXWgi+rVtyCqeKgWsJOivTqCJnWtZnPmiRmeB7xxkfH',
                 }
 
                 headers = {
                     'accept': 'text/plain, */*; q=0.01',
                     'accept-language': 'en-US,en;q=0.9',
                     'content-type': 'application/json',
-                    'csrftoken': '72c44e45-edcc-477b-b248-1c6d8440acd1',
+                    'csrftoken': 'a87c46fb-1ecd-49c0-b1f5-1e8b513ae02f',
                     'origin': 'https://www.shoprite.co.za',
                     'priority': 'u=1, i',
                     'referer': f'https://www.shoprite.co.za/c-2256/All-Departments?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page={page}',
-                    'sec-ch-ua': '"Not(A:Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
+                    'sec-ch-ua': '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
                     'sec-ch-ua-mobile': '?0',
                     'sec-ch-ua-platform': '"Windows"',
                     'sec-fetch-dest': 'empty',
                     'sec-fetch-mode': 'cors',
                     'sec-fetch-site': 'same-origin',
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
                     'x-requested-with': 'XMLHttpRequest',
                 }
 
