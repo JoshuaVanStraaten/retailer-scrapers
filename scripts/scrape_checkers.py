@@ -353,13 +353,18 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                 response = json.loads(response.text)
 
                 for scraped_item, result in zip(scraped_data, response):
-                    sale_price = result.get('information')[0].get('salePrice')
-                    bonus_buys = result.get('information')[0].get('includedInBonusBuys', [])
-                    if sale_price:
+                    sale_price = result.get('information', [{}])[0].get('salePrice')
+                    bonus_buys = result.get('information', [{}])[0].get('includedInBonusBuys', [])
+
+                    # Ensure sale_price is not None, NaN, or an empty string
+                    if sale_price and not (isinstance(sale_price, float) and math.isnan(sale_price)):
                         scraped_item['promotion_price'] = f"R{sale_price}"
                     elif bonus_buys:
                         bundle_price = bonus_buys[0].get('name')
-                        scraped_item['promotion_price'] = bundle_price
+                        if bundle_price and not (isinstance(bundle_price, float) and math.isnan(bundle_price)):
+                            scraped_item['promotion_price'] = bundle_price
+                        else:
+                            scraped_item['promotion_price'] = 'No promo'
                     else:
                         scraped_item['promotion_price'] = 'No promo'
 
@@ -393,7 +398,7 @@ def get_optimal_threads():
     return min(optimal_threads, memory_limited_threads)
 
 def scrape_checkers_concurrently(base_url, start_page, end_page, existing_data, starting_index):
-    optimal_threads = 3  # For now just set to 3
+    optimal_threads = get_optimal_threads()
     print(f"Using {optimal_threads} threads based on system specs.")
 
     visited_pages = set()
@@ -426,16 +431,16 @@ def load_existing_data(csv_file):
         df = pd.read_csv(csv_file, encoding='utf-8')
     except UnicodeDecodeError:
         # If UTF-8 fails, try an alternative encoding (e.g., 'latin1')
-        print(f"Warning: Failed to read {csv_file} with UTF-8 encoding. Trying 'latin1'.")
+        logging.info(f"Warning: Failed to read {csv_file} with UTF-8 encoding. Trying 'latin1'.")
         df = pd.read_csv(csv_file, encoding='latin1')
     except FileNotFoundError:
-        print(f"Error: File {csv_file} not found.")
+        logging.info(f"Error: File {csv_file} not found.")
         return {}
 
     # Check for rows with NaN values and log them
     rows_with_nan = df[df.isna().any(axis=1)]
     if not rows_with_nan.empty:
-        print(f"Warning: Found rows with NaN values:\n{rows_with_nan}")
+        logging.info(f"Warning: Found rows with NaN values:\n{rows_with_nan}")
 
     # Convert the DataFrame to a dictionary
     return {
@@ -506,46 +511,63 @@ def save_to_csv(product_list, filename='products_checkers.csv'):
         print(f"Data has been appended to {filename}.")
 
 
-def load_and_drop_duplicates(csv_file):
+def load_and_fix_duplicates(csv_file):
     """
-    Loads data from a CSV file and drops duplicate rows based on the 'name' and 'price' columns.
-    If duplicate rows are found, the row with a valid promotion_price (not 'No promo') is kept.
+    Loads data from a CSV file, drops duplicate rows based on the 'name' and 'price' columns,
+    prioritizing rows with a valid 'promotion_price'. Additionally, if the first column ('index')
+    has duplicates, it removes them, recalculates their index, and reinserts them at the end.
 
     Args:
         csv_file (str): The path to the CSV file.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the deduplicated data.
+        pd.DataFrame: A DataFrame containing the cleaned and reindexed data.
     """
     try:
-        # Load the CSV file into a DataFrame
+        # Load the CSV file
         df = pd.read_csv(csv_file)
         original_count = len(df)
-        print(f"Loaded {original_count} rows from {csv_file}.")
+        logging.info(f"Loaded {original_count} rows from {csv_file}.")
 
-        # Create a temporary column 'promo_priority'
-        # Set to 0 if promotion_price is not 'No promo' (preferred), 1 otherwise
+        # Ensure the first column is named 'index' (if it's unnamed, rename it)
+        if df.columns[0] != 'index':
+            df.rename(columns={df.columns[0]: 'index'}, inplace=True)
+
+        # Step 1: Check for duplicate indexes
+        duplicate_indexes = df[df.duplicated(subset=['index'], keep=False)]
+        num_duplicates = len(duplicate_indexes)
+
+        if num_duplicates > 0:
+            logging.info(f"Found {num_duplicates} duplicate index values.")
+
+            # Step 2: Save duplicates in a list and remove them from the original DataFrame
+            duplicate_rows = duplicate_indexes.copy()
+            df = df.drop(duplicate_indexes.index)
+
+            # Step 3: Determine the new starting index dynamically
+            latest_index = df['index'].max()  # Get the highest existing index
+            new_indexes = list(range(latest_index + 1, latest_index + 1 + num_duplicates))
+
+            # Step 4: Assign new indexes to duplicate rows
+            duplicate_rows['index'] = new_indexes
+
+            # Step 5: Append the fixed duplicates back into the DataFrame
+            df = pd.concat([df, duplicate_rows], ignore_index=True)
+            logging.info(f"Reinserted {num_duplicates} rows with new indexes starting from {latest_index + 1}.")
+
+        # Step 6: Remove duplicates based on 'name' and 'price', prioritizing valid promotion prices
         df['promo_priority'] = df['promotion_price'].apply(lambda x: 0 if x != 'No promo' else 1)
-
-        # Sort the DataFrame by 'name', 'price', and 'promo_priority'
         df = df.sort_values(by=['name', 'price', 'promo_priority'])
+        df = df.drop_duplicates(subset=['name', 'price'], keep='first').drop(columns=['promo_priority'])
 
-        # Drop duplicates based on the 'name' and 'price' columns, keeping the first occurrence
-        deduped_df = df.drop_duplicates(subset=['name', 'price'], keep='first')
-        deduped_count = len(deduped_df)
-        print(f"Dropped {original_count - deduped_count} duplicate rows. {deduped_count} rows remain.")
+        # Step 7: Save the cleaned DataFrame
+        df.to_csv(csv_file, index=False)
+        logging.info(f"Overwritten {csv_file} with cleaned data. Final row count: {len(df)}")
 
-        # Remove the temporary column before saving
-        deduped_df = deduped_df.drop(columns=['promo_priority'])
-
-        # Overwrite the CSV file with the deduplicated DataFrame
-        deduped_df.to_csv(csv_file, index=False)
-        print(f"Overwritten {csv_file} with deduplicated data.")
-
-        return deduped_df
+        return df
 
     except Exception as e:
-        print(f"Error loading data from {csv_file}: {e}")
+        logging.info(f"Error processing data from {csv_file}: {e}")
         return pd.DataFrame()
 
 
@@ -558,7 +580,7 @@ if __name__ == "__main__":
                                                 existing_data=existing_data, starting_index=0)
 
     if scraped_data:
-        load_and_drop_duplicates('products_checkers.csv')
+        load_and_fix_duplicates('products_checkers.csv')
         new_data = load_existing_data('products_checkers.csv')
         # Filter new_data to include only rows where 'retailer' == 'Checkers'
         filtered_data = {name: details for name, details in new_data.items() if details.get('retailer') == 'Checkers'}
@@ -569,3 +591,8 @@ if __name__ == "__main__":
         logging.info("No new data scraped.")
     logging.info("Script completed.")
     logging.shutdown()
+
+
+# Update the `load_existing_data` function to handle the Nan values.
+# So identify which column has the Nan values and insert a "default" value for that column.
+# Take a look at save_to_csv - # Convert to numeric, coerce errors to NaN!
