@@ -165,23 +165,51 @@ class Scraper:
 
     def get_promotion_message(self, promotions):
         """
-        Extract the promotion message from the promotions data.
+        Extract and format the promotion message from the promotions data.
 
         Args:
-        promotions (list or dict): The promotions data for a product.
+            promotions (list or dict): The promotions data for a product.
 
         Returns:
-        str: The promotion message or a default message if no promotion is available.
+            str: The formatted promotion message or a default message if unavailable.
         """
         if not promotions:
-            return 'No promotion available'
+            return 'No promo'
 
         if isinstance(promotions, list):
             promotion = promotions[0] if promotions else None
         else:
             promotion = promotions
 
-        return promotion.get('promotionTextMessage', 'Promotion details not available') if promotion else 'No promo'
+        if not promotion:
+            return 'No promo'
+
+        message = promotion.get('promotionTextMessage', '').strip()
+        end_date_str = promotion.get('endDate')
+
+        # Format the end date if available
+        formatted_date = ''
+        if end_date_str:
+            try:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%S%z')
+                formatted_date = f"Ends {end_date.strftime('%#d %b')}"  # Windows-friendly
+            except Exception:
+                formatted_date = ''
+
+        # Combine message with end date intelligently
+        if message and formatted_date:
+            if '(' in message:
+                # If already has parentheses, use dash separator
+                return f"{message} - {formatted_date}"
+            else:
+                # Else, wrap the end date in parentheses
+                return f"{message} ({formatted_date})"
+        elif message:
+            return message
+        elif formatted_date:
+            return f"({formatted_date})"
+        else:
+            return 'Promotion details not available'
 
 
     def load_existing_data(self, csv_file):
