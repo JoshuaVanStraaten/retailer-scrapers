@@ -151,12 +151,14 @@ class Scraper:
         prod_lst = []
 
         for result in results:
+            promo, valid_until = self.get_promotion_message(result.get('potentialPromotions', []))
             prod_dict = {
                 'name': result.get('name'),
                 'price': result.get('price', {}).get('formattedValue'),
-                'promotion_price': self.get_promotion_message(result.get('potentialPromotions', [])),
+                'promotion_price': promo,
                 'retailer': "Pick n Pay",
-                'image_url': next((item['url'] for item in result.get('images') if item['format'] == 'carousel'), None)
+                'image_url': next((item['url'] for item in result.get('images') if item['format'] == 'carousel'), None),
+                'promotion_valid': valid_until,
             }
 
             prod_lst.append(prod_dict)
@@ -165,23 +167,37 @@ class Scraper:
 
     def get_promotion_message(self, promotions):
         """
-        Extract the promotion message from the promotions data.
+        Extract and format the promotion message from the promotions data.
 
         Args:
-        promotions (list or dict): The promotions data for a product.
+            promotions (list or dict): The promotions data for a product.
 
         Returns:
-        str: The promotion message or a default message if no promotion is available.
+            tuple[str, str]: A tuple containing the promotion message and the formatted end date separately.
         """
         if not promotions:
-            return 'No promotion available'
+            return 'No promo', ' '
 
-        if isinstance(promotions, list):
-            promotion = promotions[0] if promotions else None
-        else:
-            promotion = promotions
+        # Handle list or dict
+        promotion = promotions[0] if isinstance(promotions, list) and promotions else promotions
 
-        return promotion.get('promotionTextMessage', 'Promotion details not available') if promotion else 'No promo'
+        if not promotion:
+            return 'No promo', ' '
+
+        message = promotion.get('promotionTextMessage', '').strip()
+        end_date_str = promotion.get('endDate')
+
+        # Format the end date if available
+        formatted_date = ' '
+        if end_date_str:
+            try:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%S%z')
+                formatted_date = f"Valid until {end_date.strftime('%#d %B %Y')}"  # Use %-d for Unix, %#d for Windows
+            except Exception as e:
+                print(f"Date parsing error: {e}")
+                formatted_date = ' '
+
+        return message or 'Promotion details not available', formatted_date
 
 
     def load_existing_data(self, csv_file):

@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+import html
 import json
 import random
 import time
@@ -299,6 +300,7 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                     'promotion_price': price_current if price_old else "No promo",
                     'retailer': "shoprite",
                     'image_url': product_image_url,
+                    'promotion_valid': " ",
                 })
 
                 # Use API to get Promotion information
@@ -350,13 +352,24 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                     sale_price = result.get('information', [{}])[0].get('salePrice')
                     bonus_buys = result.get('information', [{}])[0].get('includedInBonusBuys', [])
 
-                    # Ensure sale_price is not None, NaN, or an empty string
+                    # Get Valid Until information (if there is a promotion)
+                    html_bbs = result.get('information', [{}])[0].get('htmlBBs', '')
+                    html_bbs_unescaped = html.unescape(html_bbs)
+                    soup = BeautifulSoup(html_bbs_unescaped, 'html.parser')
+
+                    # Extract the "Valid until..." span
+                    valid_until_tag = soup.find('span', class_='item-product__valid')
+                    if valid_until_tag:
+                        valid_until_text = valid_until_tag.get_text(strip=True).replace('\xa0', ' ')
+                        scraped_item['promotion_valid'] = valid_until_text
+
+                    # Determine promotion price with optional date tag
                     if sale_price and not (isinstance(sale_price, float) and math.isnan(sale_price)):
-                        scraped_item['promotion_price'] = f"R{sale_price}"
+                        scraped_item['promotion_price'] = f"R{sale_price}".strip()
                     elif bonus_buys:
                         bundle_price = bonus_buys[0].get('name')
                         if bundle_price and not (isinstance(bundle_price, float) and math.isnan(bundle_price)):
-                            scraped_item['promotion_price'] = bundle_price
+                            scraped_item['promotion_price'] = f"{bundle_price}".strip()
                         else:
                             scraped_item['promotion_price'] = 'No promo'
                     else:

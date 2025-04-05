@@ -1,4 +1,6 @@
 import requests
+import re
+import html
 import json
 import pandas as pd
 from datetime import datetime
@@ -91,7 +93,7 @@ class Scraper:
                 sleep(self.timeout)
 
     # Process the response data from the server
-    def process(self, response):
+    def process(self, response, offer_valid_sentence):
 
         results = response.get('contents')[0].get('mainContent')[0].get('contents')[0].get('records')
 
@@ -114,6 +116,7 @@ class Scraper:
                 'promotion_price': result.get('attributes', {}).get('PROMOTION', 'No promo'),
                 'retailer': "Woolworths",
                 'image_url': result.get('attributes').get('p_externalImageReference'),
+                'promotion_valid': offer_valid_sentence,
             }
 
             # Ensure there are no Nan values in the product details
@@ -127,6 +130,83 @@ class Scraper:
         df = pd.DataFrame(products)
 
         return df, page_end
+
+    # Request promotion information from Woolies' DailyDifference
+    def request_offer_valid(self):
+
+        headers = {
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Connection': 'keep-alive',
+            'Referer': 'https://www.woolworths.co.za/cat/DailyDifference/_/N-1z13sk5ZakhueZxtznwk?No=24&Nrpp=24',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-origin',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+            'X-Frame-Options': 'SAMEORIGIN',
+            'X-Requested-By': 'Woolworths Online',
+            'sec-ch-ua': '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+        }
+
+        params = (
+            ('pageURL', '/cat/DailyDifference/_/N-1z13sk5ZakhueZxtznwk'),
+            ('No', '24'),
+            ('Nrpp', '24'),
+        )
+
+        # Use a try except block to catch any exceptions
+        try:
+            response = requests.get('https://www.woolworths.co.za/server/searchCategory', params=params, headers=headers)
+
+            # Response.ok is set to true if the response code is 200
+            if response.ok:
+
+                # Print the response code to the terminal
+                print(response.status_code)
+
+                # Convert the response text to python dictionary
+                response = json.loads(response.text)
+
+                # Return the response will break the while loop
+                return response
+
+            else:
+
+                # Print the response code to the terminal
+                print(response.status_code)
+
+                # Issue a sleep command for x seconds, settings in params
+                sleep(self.timeout)
+        except:
+
+            # Print the response code to the terminal
+            print("ERROR")
+
+            # Issue a sleep command for x seconds, settings in params
+            sleep(self.timeout)
+
+    # Function to recursively search for text in 'content' fields and extract the offer date sentence
+    def extract_offer_valid_sentences(self, obj):
+        results = []
+
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if key == 'content' and isinstance(value, str):
+                    # Search for the "Offer valid ..." sentence using regex
+                    clean_text = html.unescape(value)  # converts &nbsp; to a normal space
+                    match = re.search(r'Offer valid\s+\d{1,2}\s+\w+\s+-\s+\d{1,2}\s+\w+\s+\d{4}', clean_text)
+                    if match:
+                        results.append(match.group())
+                else:
+                    results.extend(self.extract_offer_valid_sentences(value))
+
+        elif isinstance(obj, list):
+            for item in obj:
+                results.extend(self.extract_offer_valid_sentences(item))
+
+        return results
 
     def load_existing_data(self, csv_file):
         """
@@ -207,6 +287,15 @@ class Scraper:
         # Create an empty list to store the data
         dfs = []
 
+        # Get offer valid information
+        try:
+            offer_data = self.request_offer_valid()
+            offer_valid_sentences = self.extract_offer_valid_sentences(offer_data)
+            print(f"Offer valid sentences: {offer_valid_sentences[0] if offer_valid_sentences else " "}")
+        except Exception as e:
+            print(f"Error extracting offer valid sentences: {e}")
+            offer_valid_sentences = " "
+
         # Increment through all the pages
         while True:
 
@@ -214,7 +303,7 @@ class Scraper:
             response = self.request(page_number)
 
             # Process the response and determine the total number of pages
-            current_df, page_end = self.process(response)
+            current_df, page_end = self.process(response, offer_valid_sentences[0] if offer_valid_sentences else " ")
 
             # Append the current page's DataFrame to the list of all pages
             dfs.append(current_df)
