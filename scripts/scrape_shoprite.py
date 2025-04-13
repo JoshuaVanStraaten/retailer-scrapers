@@ -553,7 +553,7 @@ def load_and_fix_duplicates(csv_file):
             df = df.drop(duplicate_indexes.index)
 
             # Step 3: Determine the new starting index
-            latest_index = max(df['index'].max(), 17500)
+            latest_index = max(df['index'].max() if not df['index'].empty else float('-inf'), 17499)
             new_indexes = list(range(latest_index + 1, latest_index + 1 + num_duplicates))
 
             # Step 4: Assign new indexes to duplicate rows

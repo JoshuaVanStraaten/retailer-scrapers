@@ -247,6 +247,66 @@ class Scraper:
         }
 
 
+    def load_and_fix_duplicates(self, csv_file):
+        """
+        Loads data from a CSV file, drops duplicate rows based on the 'name' and 'price' columns,
+        prioritizing rows with a valid 'promotion_price'. Additionally, if the first column ('index')
+        has duplicates, it removes them, recalculates their index, and reinserts them at the end.
+
+        Args:
+            csv_file (str): The path to the CSV file.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the cleaned and reindexed data.
+        """
+        try:
+            # Load the CSV file
+            df = pd.read_csv(csv_file)
+            original_count = len(df)
+            print(f"Loaded {original_count} rows from {csv_file}.")
+
+            # Ensure the first column is named 'index' (if it's unnamed, rename it)
+            if df.columns[0] != 'index':
+                df.rename(columns={df.columns[0]: 'index'}, inplace=True)
+
+            # Step 1: Check for duplicate indexes
+            duplicate_indexes = df[df.duplicated(subset=['index'], keep=False)]
+            num_duplicates = len(duplicate_indexes)
+
+            if num_duplicates > 0:
+                print(f"Found {num_duplicates} duplicate index values.")
+
+                # Step 2: Save duplicates in a list and remove them from the original DataFrame
+                duplicate_rows = duplicate_indexes.copy()
+                df = df.drop(duplicate_indexes.index)
+
+                # Step 3: Determine the new starting index
+                latest_index = max(df['index'].max() if not df['index'].empty else float('-inf'), 28999)
+                new_indexes = list(range(latest_index + 1, latest_index + 1 + num_duplicates))
+
+                # Step 4: Assign new indexes to duplicate rows
+                duplicate_rows['index'] = new_indexes
+
+                # Step 5: Append the fixed duplicates back into the DataFrame
+                df = pd.concat([df, duplicate_rows], ignore_index=True)
+                print(f"Reinserted {num_duplicates} rows with new indexes starting from {latest_index + 1}.")
+
+            # Step 6: Remove duplicates based on 'name' and 'price', prioritizing valid promotion prices
+            df['promo_priority'] = df['promotion_price'].apply(lambda x: 0 if x != 'No promo' else 1)
+            df = df.sort_values(by=['name', 'price', 'promo_priority'])
+            df = df.drop_duplicates(subset=['name', 'price'], keep='first').drop(columns=['promo_priority'])
+
+            # Step 7: Save the cleaned DataFrame
+            df.to_csv(csv_file, index=False)
+            print(f"Overwritten {csv_file} with cleaned data. Final row count: {len(df)}")
+
+            return df
+
+        except Exception as e:
+            print(f"Error processing data from {csv_file}: {e}")
+            return pd.DataFrame()
+
+
     def upsert_to_supabase(self, data, batch_size=500):
         """
         Upserts data to Supabase in batches.
@@ -371,6 +431,7 @@ class Scraper:
         # --- End deduplication ---
 
         # Load data from the updated CSV
+        self.load_and_fix_duplicates('products_woolies.csv')
         new_data = self.load_existing_data('products_woolies.csv')
 
         # Filter new_data to include only rows where 'retailer' == 'Woolworths'
