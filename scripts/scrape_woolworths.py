@@ -7,10 +7,27 @@ from datetime import datetime
 from time import sleep as sleep
 import os
 from supabase import create_client
+import logging
 
 
 SUPABASE_URL = "<supabase_url>"
 SUPABASE_KEY = "<supabase_key>"
+
+
+# Setup logging directory
+log_dir = "logs"
+os.makedirs(log_dir, exist_ok=True)
+
+# Generate log filename with timestamp
+log_filename = os.path.join(log_dir, f"woolies_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log")
+
+# Configure logging
+logging.basicConfig(
+    filename=log_filename,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 
 
 # Create a scraper class
@@ -56,6 +73,7 @@ class Scraper:
 
         # Keep the user updated with terminal window print outs
         print_update = lambda x: print(f'>>>> Time {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} - Response Code: {x}', end='\r')
+        logging.info(f"Requesting page {page_number} of Woolies")
         print(f"Requesting page {page_number} of Woolies")
 
         # Add a while True loop that will break on a successful response
@@ -230,16 +248,18 @@ class Scraper:
             df = pd.read_csv(csv_file, encoding='utf-8')
         except UnicodeDecodeError:
             # If UTF-8 fails, try an alternative encoding (e.g., 'latin1')
-            print(f"Warning: Failed to read {csv_file} with UTF-8 encoding. Trying 'latin1'.")
+            logging.info(f"Warning: Failed to read {csv_file} with UTF-8 encoding. Trying 'latin1'.")
             df = pd.read_csv(csv_file, encoding='latin1')
         except FileNotFoundError:
-            print(f"Error: File {csv_file} not found.")
+            logging.info(f"Error: File {csv_file} not found.")
             return {}
 
         # Check for rows with NaN values and log them
         rows_with_nan = df[df.isna().any(axis=1)]
         if not rows_with_nan.empty:
-            print(f"Warning: Found rows with NaN values:\n{rows_with_nan}")
+            logging.info(f"Warning: Found rows with NaN values:\n{rows_with_nan}")
+            # Replace NaN values with a single space ' '
+            df.fillna(' ', inplace=True)
 
         # Convert the DataFrame to a dictionary
         return {
@@ -263,7 +283,7 @@ class Scraper:
             # Load the CSV file
             df = pd.read_csv(csv_file)
             original_count = len(df)
-            print(f"Loaded {original_count} rows from {csv_file}.")
+            logging.info(f"Loaded {original_count} rows from {csv_file}.")
 
             # Ensure the first column is named 'index' (if it's unnamed, rename it)
             if df.columns[0] != 'index':
@@ -274,7 +294,7 @@ class Scraper:
             num_duplicates = len(duplicate_indexes)
 
             if num_duplicates > 0:
-                print(f"Found {num_duplicates} duplicate index values.")
+                logging.info(f"Found {num_duplicates} duplicate index values.")
 
                 # Step 2: Save duplicates in a list and remove them from the original DataFrame
                 duplicate_rows = duplicate_indexes.copy()
@@ -289,7 +309,7 @@ class Scraper:
 
                 # Step 5: Append the fixed duplicates back into the DataFrame
                 df = pd.concat([df, duplicate_rows], ignore_index=True)
-                print(f"Reinserted {num_duplicates} rows with new indexes starting from {latest_index + 1}.")
+                logging.info(f"Reinserted {num_duplicates} rows with new indexes starting from {latest_index + 1}.")
 
             # Step 6: Remove duplicates based on 'name' and 'price', prioritizing valid promotion prices
             df['promo_priority'] = df['promotion_price'].apply(lambda x: 0 if x != 'No promo' else 1)
@@ -298,12 +318,12 @@ class Scraper:
 
             # Step 7: Save the cleaned DataFrame
             df.to_csv(csv_file, index=False)
-            print(f"Overwritten {csv_file} with cleaned data. Final row count: {len(df)}")
+            logging.info(f"Overwritten {csv_file} with cleaned data. Final row count: {len(df)}")
 
             return df
 
         except Exception as e:
-            print(f"Error processing data from {csv_file}: {e}")
+            logging.error(f"Error processing data from {csv_file}: {e}")
             return pd.DataFrame()
 
 
@@ -335,6 +355,7 @@ class Scraper:
                 print(f"Batch upsert response: {response}")
 
         except Exception as e:
+            logging.error(f"Error upserting to Supabase: {e}")
             print(f"Error upserting to Supabase: {e}")
 
 
@@ -426,7 +447,7 @@ class Scraper:
         # Drop duplicates based on 'name' and 'price' columns, keeping the first occurrence
         dedup_df.drop_duplicates(subset=['name', 'price'], keep='first', inplace=True)
         deduped_count = len(dedup_df)
-        print(f"Dropped {original_count - deduped_count} duplicate rows. {deduped_count} rows remain in products_woolies.csv.")
+        logging.info(f"Dropped {original_count - deduped_count} duplicate rows. {deduped_count} rows remain in products_woolies.csv.")
         dedup_df.to_csv('products_woolies.csv', encoding='utf-8')
         # --- End deduplication ---
 
@@ -443,7 +464,7 @@ class Scraper:
             print(f"Scraping complete. {len(filtered_data.values())} products scraped and saved to products_woolies.csv.")
         except Exception as e:
             print(f"Error during Supabase upsert: {e}")
-        print("Scraping process complete.")
+        logging.info("Scraping process complete.")
 
 
 # Define a parameters dictionary to be passed to the class on construction
@@ -480,6 +501,4 @@ for category, code in categories.items():
     scraper.run()
     last_index = scraper.last_index
 
-
-# TO-DO: Add image uploads to Supabase
-# TO-DO: Add error handling logic for Nan values after load csv prior to upsert
+# Woolies doesn't display offer valid dates - only shown in the picture

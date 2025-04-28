@@ -6,10 +6,28 @@ from datetime import datetime, time
 import pytz
 from time import sleep
 from urllib.parse import urlparse
+import os
+import logging
 
 
 SUPABASE_URL = "<supabase_url>"
 SUPABASE_KEY = "<supabase_key>"
+
+
+# Setup logging directory
+log_dir = "logs"
+os.makedirs(log_dir, exist_ok=True)
+
+# Generate log filename with timestamp
+log_filename = os.path.join(log_dir, f"pnp_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log")
+
+# Configure logging
+logging.basicConfig(
+    filename=log_filename,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 
 
 class Scraper:
@@ -106,6 +124,7 @@ class Scraper:
             'curr': 'ZAR'
         }
 
+        logging.info(f"Requesting page {page_number} of Pnp")
         print(f"Requesting page {page_number} of Pnp")
         retry_count = 0
 
@@ -114,22 +133,22 @@ class Scraper:
                 response = self.session.post(base_url, params=params, headers=headers)
 
                 if response.ok:
-                    print(f"Response received. Status code: {response.status_code}")
+                    logging.info(f"Response received. Status code: {response.status_code}")
                     return json.loads(response.text)
                 else:
-                    print(f"Request failed. Status code: {response.status_code}")
+                    logging.warning(f"Request failed. Status code: {response.status_code}")
                     return None
 
             except Exception as e:
                 retry_count += 1
-                print(f"An error occurred: {str(e)}. Retry {retry_count}/{max_retries}")
+                logging.warning(f"An error occurred: {str(e)}. Retry {retry_count}/{max_retries}")
 
                 if retry_count >= max_retries:
-                    print("Max retries reached. Request failed.")
+                    logging.error("Max retries reached. Request failed.")
                     return None
 
             finally:
-                print(f"Waiting for {self.timeout} seconds before the next attempt...")
+                logging.info(f"Waiting for {self.timeout} seconds before the next attempt...")
                 sleep(self.timeout)
 
 
@@ -154,7 +173,7 @@ class Scraper:
             promo, valid_until = self.get_promotion_message(result.get('potentialPromotions', []))
             prod_dict = {
                 'name': result.get('name'),
-                'price': result.get('price', {}).get('formattedValue'),
+                'price': result.get('price', {}).get('formattedValue') or 'Price not available',
                 'promotion_price': promo,
                 'retailer': "Pick n Pay",
                 'image_url': next((item['url'] for item in result.get('images') if item['format'] == 'carousel'), None),
@@ -197,7 +216,7 @@ class Scraper:
                 print(f"Date parsing error: {e}")
                 formatted_date = ' '
 
-        return message or 'Promotion details not available', formatted_date
+        return message or 'No promo', formatted_date
 
 
     def load_existing_data(self, csv_file):
@@ -222,16 +241,18 @@ class Scraper:
             df = pd.read_csv(csv_file, encoding='utf-8')
         except UnicodeDecodeError:
             # If UTF-8 fails, try an alternative encoding (e.g., 'latin1')
-            print(f"Warning: Failed to read {csv_file} with UTF-8 encoding. Trying 'latin1'.")
+            logging.info(f"Warning: Failed to read {csv_file} with UTF-8 encoding. Trying 'latin1'.")
             df = pd.read_csv(csv_file, encoding='latin1')
         except FileNotFoundError:
-            print(f"Error: File {csv_file} not found.")
+            logging.info(f"Error: File {csv_file} not found.")
             return {}
 
         # Check for rows with NaN values and log them
         rows_with_nan = df[df.isna().any(axis=1)]
         if not rows_with_nan.empty:
-            print(f"Warning: Found rows with NaN values:\n{rows_with_nan}")
+            logging.info(f"Warning: Found rows with NaN values:\n{rows_with_nan}")
+            # Replace NaN values with a single space ' '
+            df.fillna(' ', inplace=True)
 
         # Convert the DataFrame to a dictionary
         return {
@@ -267,6 +288,7 @@ class Scraper:
                 print(f"Batch upsert response: {response}")
 
         except Exception as e:
+            logging.error(f"Error upserting to Supabase: {e}")
             print(f"Error upserting to Supabase: {e}")
 
 
@@ -286,7 +308,7 @@ class Scraper:
             # Load the CSV file
             df = pd.read_csv(csv_file)
             original_count = len(df)
-            print(f"Loaded {original_count} rows from {csv_file}.")
+            logging.info(f"Loaded {original_count} rows from {csv_file}.")
 
             # Ensure the first column is named 'index' (if it's unnamed, rename it)
             if df.columns[0] != 'index':
@@ -297,7 +319,7 @@ class Scraper:
             num_duplicates = len(duplicate_indexes)
 
             if num_duplicates > 0:
-                print(f"Found {num_duplicates} duplicate index values.")
+                logging.info(f"Found {num_duplicates} duplicate index values.")
 
                 # Step 2: Save duplicates in a list and remove them from the original DataFrame
                 duplicate_rows = duplicate_indexes.copy()
@@ -312,7 +334,7 @@ class Scraper:
 
                 # Step 5: Append the fixed duplicates back into the DataFrame
                 df = pd.concat([df, duplicate_rows], ignore_index=True)
-                print(f"Reinserted {num_duplicates} rows with new indexes starting from {latest_index + 1}.")
+                logging.info(f"Reinserted {num_duplicates} rows with new indexes starting from {latest_index + 1}.")
 
             # Step 6: Remove duplicates based on 'name' and 'price', prioritizing valid promotion prices
             df['promo_priority'] = df['promotion_price'].apply(lambda x: 0 if x != 'No promo' else 1)
@@ -321,12 +343,12 @@ class Scraper:
 
             # Step 7: Save the cleaned DataFrame
             df.to_csv(csv_file, index=False)
-            print(f"Overwritten {csv_file} with cleaned data. Final row count: {len(df)}")
+            logging.info(f"Overwritten {csv_file} with cleaned data. Final row count: {len(df)}")
 
             return df
 
         except Exception as e:
-            print(f"Error processing data from {csv_file}: {e}")
+            logging.error(f"Error processing data from {csv_file}: {e}")
             return pd.DataFrame()
 
 
@@ -407,7 +429,7 @@ class Scraper:
         original_count = len(df)
         df.drop_duplicates(subset=['name', 'price'], keep='first', inplace=True)
         deduped_count = len(df)
-        print(f"Dropped {original_count - deduped_count} duplicate rows. {deduped_count} rows remain.")
+        logging.info(f"Dropped {original_count - deduped_count} duplicate rows. {deduped_count} rows remain.")
         df.to_csv(filename, encoding='utf-8')
         # --- End deduplication ---
 
@@ -423,7 +445,7 @@ class Scraper:
             print(f"Scraping complete. {len(filtered_data.values())} products scraped and saved to '{filename}'.")
         except Exception as e:
             print(f"Error during Supabase upsert: {e}")
-        print("Scraping process complete.")
+        logging.info("Scraping process complete.")
 
 
 def main(timeout, referer_url):

@@ -23,6 +23,7 @@ SUPABASE_KEY = "<supabase_key>"
 LOCAL_FOLDER_PATH = os.path.join('.', 'shoprite_images')
 BUCKET_NAME = 'product_images'
 REMOTE_FOLDER_PATH = 'shoprite/'
+PLACEHOLDER_IMAGE_URL = 'https://sfnavipqilqgzmtedfuh.supabase.co/storage/v1/object/public/product_images/shoprite/shoprite_image_placeholder.png'
 
 # Setup logging directory
 log_dir = "logs"
@@ -262,10 +263,14 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                 price_current = item.select_one('.now').get_text(strip=True) if item.select_one('.now') else None
 
                 # Extract product image URL
+                parse_image_data = True
                 existing_product = existing_data.get(product_name)
                 if existing_product:
                     product_image_url = existing_product['image_url']
-                else:
+                    if product_image_url and product_image_url != PLACEHOLDER_IMAGE_URL:
+                        parse_image_data = False
+
+                if parse_image_data:
                     images = item.select('img')
                     product_image = next(
                         (img.get('data-original-src') for img in images if img.get('data-original-src') and "discovery-vitality" not in img.get('data-original-src')),
@@ -291,7 +296,8 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                             print(f"File Exists: {remote_path}")
                             product_image_url = upload_file_to_supabase(save_path, BUCKET_NAME, remote_path)
                         else:
-                            print(f"Unable to identify image URL for {product_name}")
+                            print(f"Unable to identify image URL for {product_name}, using placeholder image.")
+                            product_image_url = PLACEHOLDER_IMAGE_URL
 
                 scraped_data.append({
                     'index': str((page * 20) - 1 + current_index),
@@ -449,6 +455,8 @@ def load_existing_data(csv_file):
     rows_with_nan = df[df.isna().any(axis=1)]
     if not rows_with_nan.empty:
         logging.info(f"Warning: Found rows with NaN values:\n{rows_with_nan}")
+        # Replace NaN values with a single space ' '
+        df.fillna(' ', inplace=True)
 
     # Convert the DataFrame to a dictionary
     return {
@@ -483,6 +491,7 @@ def upsert_to_supabase(data, batch_size=500):
             print(f"Batch upsert response: {response}")
 
     except Exception as e:
+        logging.error(f"Error upserting to Supabase: {e}")
         print(f"Error upserting to Supabase: {e}")
 
 
@@ -575,7 +584,7 @@ def load_and_fix_duplicates(csv_file):
         return df
 
     except Exception as e:
-        logging.info(f"Error processing data from {csv_file}: {e}")
+        logging.error(f"Error processing data from {csv_file}: {e}")
         return pd.DataFrame()
 
 
@@ -600,7 +609,5 @@ if __name__ == "__main__":
     logging.info("Script completed.")
     logging.shutdown()
 
-# TO-DO: Use a default image if the image cannot be found
-#        Ensure logic is added so when the old data is compared
-#        it will retry downloading.
-#        For Bundle deals - get the bundle deal page / ignore it
+# TO-DO:
+#   For Bundle deals - get the bundle deal page / ignore it
