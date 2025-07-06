@@ -322,26 +322,27 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                     '_ttp': 'bvckI6r_BWdOUDYHZyu2bfp4Qxt',
                     '_ga': 'GA1.3.697118611.1720953493',
                     '_ga_P4HXTRVEMT': 'GS1.1.1720953493.1.1.1720954310.60.0.0',
-                    'JSESSIONID': 'Y25-afd04319-9a94-4d09-92c0-9f8bb5285aaf',
-                    'AWSALB': 'wJ3JZCqxtEsD4+9MSoaiQB+m9C3pBHKF4m0PyrISh3vmiX++I7ygiwdetpk/p3jCYZK+pYhIm2AgLsVVWtXWgi+rVtyCqeKgWsJOivTqCJnWtZnPmiRmeB7xxkfH',
-                    'AWSALBCORS': 'wJ3JZCqxtEsD4+9MSoaiQB+m9C3pBHKF4m0PyrISh3vmiX++I7ygiwdetpk/p3jCYZK+pYhIm2AgLsVVWtXWgi+rVtyCqeKgWsJOivTqCJnWtZnPmiRmeB7xxkfH',
+                    'JSESSIONID': 'Y24-316a0f16-54b9-43a5-9ebf-92b73aa1538d',
+                    'geolocation': '{%22latitude%22:-25.8537611%2C%22longitude%22:28.2483599%2C%22accuracy%22:18.214}',
+                    'AWSALB': 'QQqcrjzNyvFBnuSqogweO9GMAwSBRKOnQ/0HTlcRNXtEcX6c33/sdWWt1z1ONSmaYKhxkDR+6biUq2+c7QI4V+jTwdaF6VTUjR4PrQavX10mT6951cj1HJiAjqD6',
+                    'AWSALBCORS': 'QQqcrjzNyvFBnuSqogweO9GMAwSBRKOnQ/0HTlcRNXtEcX6c33/sdWWt1z1ONSmaYKhxkDR+6biUq2+c7QI4V+jTwdaF6VTUjR4PrQavX10mT6951cj1HJiAjqD6',
                 }
 
                 headers = {
                     'accept': 'text/plain, */*; q=0.01',
                     'accept-language': 'en-US,en;q=0.9',
                     'content-type': 'application/json',
-                    'csrftoken': 'a87c46fb-1ecd-49c0-b1f5-1e8b513ae02f',
+                    'csrftoken': '07bfb30e-4b92-48f2-9e78-2097dd6ebfe8',
                     'origin': 'https://www.shoprite.co.za',
                     'priority': 'u=1, i',
                     'referer': f'https://www.shoprite.co.za/c-2256/All-Departments?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page={page}',
-                    'sec-ch-ua': '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
+                    'sec-ch-ua': '"Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
                     'sec-ch-ua-mobile': '?0',
                     'sec-ch-ua-platform': '"Windows"',
                     'sec-fetch-dest': 'empty',
                     'sec-fetch-mode': 'cors',
                     'sec-fetch-site': 'same-origin',
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
                     'x-requested-with': 'XMLHttpRequest',
                 }
 
