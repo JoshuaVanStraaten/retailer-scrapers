@@ -304,7 +304,7 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                     'name': product_name,
                     'price': get_price(price_old, price_current),
                     'promotion_price': price_current if price_old else "No promo",
-                    'retailer': "shoprite",
+                    'retailer': "Shoprite",
                     'image_url': product_image_url,
                     'promotion_valid': " ",
                 })
@@ -599,8 +599,8 @@ if __name__ == "__main__":
     if scraped_data:
         load_and_fix_duplicates('products_shoprite.csv')
         new_data = load_existing_data('products_shoprite.csv')
-        # Filter new_data to include only rows where 'retailer' == 'shoprite'
-        filtered_data = {name: details for name, details in new_data.items() if details.get('retailer') == 'shoprite'}
+        # Filter new_data to include only rows where 'retailer' == 'Shoprite'
+        filtered_data = {name: details for name, details in new_data.items() if details.get('retailer') == 'Shoprite'}
         upsert_to_supabase(list(filtered_data.values()))
         logging.info("Data saved and updated.")
 

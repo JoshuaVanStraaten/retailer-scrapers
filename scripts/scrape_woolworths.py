@@ -501,4 +501,4 @@ for category, code in categories.items():
     scraper.run()
     last_index = scraper.last_index
 
-# Woolies doesn't display offer valid dates - only shown in the picture
+# Woolies doesn't display offer valid dates - only shown in the picture!

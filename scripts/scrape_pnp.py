@@ -119,7 +119,7 @@ class Scraper:
             'query': ':relevance:allCategories:pnpbase',
             'pageSize': '72',
             'currentPage': f'{page_number}',
-            'storeCode': 'WC44',
+            'storeCode': 'WC44',  # IterateStore code iterate for all 9 provinces.
             'lang': 'en',
             'curr': 'ZAR'
         }
