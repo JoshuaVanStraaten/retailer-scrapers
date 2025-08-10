@@ -1,3 +1,5 @@
 .codegpt
 /checkers_images/
 /shoprite_images/
+# Ignore all jpg images
+*.jpg
