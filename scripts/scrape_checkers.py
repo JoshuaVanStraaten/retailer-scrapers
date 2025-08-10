@@ -311,10 +311,6 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
 
                 # Use API to get Promotion information
                 cookies = {
-                    '_tt_enable_cookie': '1',
-                    '_ttp': 'rHYP5a1kSS55XOSC_uNsoaQCjC-',
-                    '_ce.s': 'v~d8caea56a1de38c3b97cd4a870625640508b025f~lcw~1723260152930~lva~1723260152930~vpv~1~lcw~1723260152932',
-                    '_clck': 'iu85bv%7C2%7Cfo7%7C0%7C1656',
                     '_ga_SY8LS918MZ': 'GS1.3.1723260153.2.1.1723260928.27.0.0',
                     '_ga': 'GA1.3.1138479441.1720952525',
                     '_uetvid': 'eb6e1d6041ca11efad7751587ec4a050',
@@ -323,28 +319,29 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                     'checkersZA-preferredStore': '57861',
                     'cookie-notification': 'NOT_ACCEPTED',
                     'webp_supported': 'true',
-                    'JSESSIONID': 'Y7-f4c0cdb5-15fa-47f0-8595-c6a7fddfa320',
-                    'AWSALB': 'tyrEFE+j8guw0ozJf6gE8JmeMRqdlswVaYNZygPC+6JpHvO0+HF9jq13GsgGbyuSd5hd3MBMqqg9D7wNngtoFAqo+aq+dY0WNj440Fg2fHkMMAzVPnPZ1P1NZUP8',
-                    'AWSALBCORS': 'tyrEFE+j8guw0ozJf6gE8JmeMRqdlswVaYNZygPC+6JpHvO0+HF9jq13GsgGbyuSd5hd3MBMqqg9D7wNngtoFAqo+aq+dY0WNj440Fg2fHkMMAzVPnPZ1P1NZUP8',
+                    'JSESSIONID': 'Y0-77132c65-6576-4ec2-b32f-6a44c39cdbb9',
+                    'AWSALB': 'sNJjpLkEf2SO4yRst0Ih0wVyJPJknLO90EL+31z7t+ptU+Y73VNPCq73PQyHa+rZ2gLPUKkRq7hCKkTnHlfqBouLdBoucXLJl606w+DDVbTVdE8wpZMbwjHGMyfL',
+                    'AWSALBCORS': 'sNJjpLkEf2SO4yRst0Ih0wVyJPJknLO90EL+31z7t+ptU+Y73VNPCq73PQyHa+rZ2gLPUKkRq7hCKkTnHlfqBouLdBoucXLJl606w+DDVbTVdE8wpZMbwjHGMyfL',
                 }
 
                 headers = {
                     'accept': 'text/plain, */*; q=0.01',
                     'accept-language': 'en-US,en;q=0.9',
                     'content-type': 'application/json',
-                    'csrftoken': '770a4429-eac4-4fd1-b5ea-ae3a37efea24',
+                    'csrftoken': '901635d9-0779-4b60-918e-18fa061e2e3e',
                     'origin': 'https://products.checkers.co.za',
                     'priority': 'u=1, i',
                     'referer': f'https://products.checkers.co.za/c-2413/All-Departments/Food?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page={page}',
-                    'sec-ch-ua': '"Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
+                    'sec-ch-ua': '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
                     'sec-ch-ua-mobile': '?0',
                     'sec-ch-ua-platform': '"Windows"',
                     'sec-fetch-dest': 'empty',
                     'sec-fetch-mode': 'cors',
                     'sec-fetch-site': 'same-origin',
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
                     'x-requested-with': 'XMLHttpRequest',
                 }
+
 
                 # response = requests.post('https://www.checkers.co.za/populateProductsWithHeavyAttributes', cookies=cookies, headers=headers, data=json_data)
                 session = requests.Session()

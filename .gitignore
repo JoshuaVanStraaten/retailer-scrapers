@@ -3,3 +3,7 @@
 /shoprite_images/
 # Ignore all jpg images
 *.jpg
+# Ignore all log files
+*.log
+# Ignore pycache
+__pycache__/
