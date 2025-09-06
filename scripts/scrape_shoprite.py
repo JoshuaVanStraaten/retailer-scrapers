@@ -313,22 +313,19 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                 cookies = {
                     'anonymous-consents': '%5B%5D',
                     'shopriteZA-preferredStore': '1894',
-                    'cookie-notification': 'NOT_ACCEPTED',
-                    'cookie-promo-alerts-popup': 'true',
-                    '_ga': 'GA1.3.697118611.1720953493',
-                    '_ga_P4HXTRVEMT': 'GS1.1.1720953493.1.1.1720954310.60.0.0',
-                    'JSESSIONID': 'Y11-c1a42277-ebfe-4229-aa3a-6afb9e644780',
                     'webp_supported': 'true',
-                    'geolocation': '{%22latitude%22:-26.0538368%2C%22longitude%22:28.0526848%2C%22accuracy%22:58380.305464809426}',
-                    'AWSALB': 'pUU3R3XcwVnRxRhbylBgWpYIwnJR/D5o4o8dfV9T+rrbdysmAKh1jkluwIwla1EkGJCBZy1WF7SKNqIY7ba6tE1N9vIVQpvOinBizRQesjuO39q3AI0QVlsWs65f',
-                    'AWSALBCORS': 'pUU3R3XcwVnRxRhbylBgWpYIwnJR/D5o4o8dfV9T+rrbdysmAKh1jkluwIwla1EkGJCBZy1WF7SKNqIY7ba6tE1N9vIVQpvOinBizRQesjuO39q3AI0QVlsWs65f',
+                    'cookie-notification': 'NOT_ACCEPTED',
+                    'JSESSIONID': 'Y9-0f828707-8d4f-4ff7-862e-be32b714f2c3',
+                    'geolocation': '{%22latitude%22:-25.6793642%2C%22longitude%22:28.1941785%2C%22accuracy%22:76592.52981392239}',
+                    'AWSALB': 'On1iHzUyDciwoBBbq2DdJeCq/plAl6wLbLG4rG5AZijnkVmH3BUgeAN3y0w3gDNLwdIyZy5qM3eFyyVZQktJ+0aGt7zzixW/ciL1kac0pwriSTzi1bn0VHT5bBR5',
+                    'AWSALBCORS': 'On1iHzUyDciwoBBbq2DdJeCq/plAl6wLbLG4rG5AZijnkVmH3BUgeAN3y0w3gDNLwdIyZy5qM3eFyyVZQktJ+0aGt7zzixW/ciL1kac0pwriSTzi1bn0VHT5bBR5',
                 }
 
                 headers = {
                     'accept': 'text/plain, */*; q=0.01',
                     'accept-language': 'en-US,en;q=0.9',
                     'content-type': 'application/json',
-                    'csrftoken': '36c1e17b-d33e-4cd7-981a-e1620046062a',
+                    'csrftoken': 'f323f0b8-fb1d-4cfd-9f1d-d22c4ba4b100',
                     'origin': 'https://www.shoprite.co.za',
                     'priority': 'u=1, i',
                     'referer': f'https://www.shoprite.co.za/c-2256/All-Departments?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page={page}',
@@ -608,3 +605,7 @@ if __name__ == "__main__":
 
 # TO-DO:
 #   For Bundle deals - get the bundle deal page / ignore it
+#   Use Env files for keys (set to ignore in .gitignore)
+#   Set up automation for gathering cookie and header data
+#   Get update Products.csv file -> Next week
+#   Update logic to take in store codes and iterate through them
