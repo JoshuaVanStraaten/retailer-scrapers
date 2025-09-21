@@ -311,33 +311,30 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
 
                 # Use API to get Promotion information
                 cookies = {
-                    '_ga_SY8LS918MZ': 'GS1.3.1723260153.2.1.1723260928.27.0.0',
-                    '_ga': 'GA1.3.1138479441.1720952525',
-                    '_ga_KRLJETD70M': 'GS1.1.1723260152.2.1.1723260970.60.0.0',
                     'anonymous-consents': '%5B%5D',
                     'cookie-notification': 'NOT_ACCEPTED',
                     'webp_supported': 'true',
                     'checkersZA-preferredStore': '45036',
-                    'JSESSIONID': 'Y0-b57d45ea-e673-4055-ba00-919c43f63d35',
-                    'AWSALB': 'Hy+vU7LLUBLMcBbgtpXat2lXJvnGz/9I0qVKv03GfafXGnwB7cmPoefIIaQrg6PUIGY600t+fFLPOJJUfqyTcyFrdKzVju1IAXSin0UlVdGoigbVbsZTW8R2lwz2',
-                    'AWSALBCORS': 'Hy+vU7LLUBLMcBbgtpXat2lXJvnGz/9I0qVKv03GfafXGnwB7cmPoefIIaQrg6PUIGY600t+fFLPOJJUfqyTcyFrdKzVju1IAXSin0UlVdGoigbVbsZTW8R2lwz2',
+                    'JSESSIONID': 'Y0-2abfeb72-1fc3-4abf-bdb9-0be16df8a7aa',
+                    'AWSALB': 'B/tmyt2y1FVcAcNEcr/fVi8QUWIamtx/ThBbIF7W3oMudnHC3qUUv2usS34q1J4wnmMiu9m1nKOZR3jiWcr17fHNweno/laybp9nrhz7B+6CEba0ef9tFfxE5y7B',
+                    'AWSALBCORS': 'B/tmyt2y1FVcAcNEcr/fVi8QUWIamtx/ThBbIF7W3oMudnHC3qUUv2usS34q1J4wnmMiu9m1nKOZR3jiWcr17fHNweno/laybp9nrhz7B+6CEba0ef9tFfxE5y7B',
                 }
 
                 headers = {
                     'accept': 'text/plain, */*; q=0.01',
                     'accept-language': 'en-US,en;q=0.9',
                     'content-type': 'application/json',
-                    'csrftoken': '68b12f2a-b825-4c9b-963a-700936ca16ec',
+                    'csrftoken': '4b85a02a-07ed-414a-8a5a-daac9fb49d3b',
                     'origin': 'https://products.checkers.co.za',
                     'priority': 'u=1, i',
                     'referer': f'https://products.checkers.co.za/c-2413/All-Departments/Food?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page={page}',
-                    'sec-ch-ua': '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
+                    'sec-ch-ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
                     'sec-ch-ua-mobile': '?0',
                     'sec-ch-ua-platform': '"Windows"',
                     'sec-fetch-dest': 'empty',
                     'sec-fetch-mode': 'cors',
                     'sec-fetch-site': 'same-origin',
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
                     'x-requested-with': 'XMLHttpRequest',
                 }
 

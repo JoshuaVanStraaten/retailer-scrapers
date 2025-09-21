@@ -315,29 +315,30 @@ def scrape_page(base_url, page, existing_data, current_index, save_filename='pro
                     'shopriteZA-preferredStore': '1894',
                     'webp_supported': 'true',
                     'cookie-notification': 'NOT_ACCEPTED',
-                    'JSESSIONID': 'Y9-0f828707-8d4f-4ff7-862e-be32b714f2c3',
-                    'geolocation': '{%22latitude%22:-25.6793642%2C%22longitude%22:28.1941785%2C%22accuracy%22:76592.52981392239}',
-                    'AWSALB': 'On1iHzUyDciwoBBbq2DdJeCq/plAl6wLbLG4rG5AZijnkVmH3BUgeAN3y0w3gDNLwdIyZy5qM3eFyyVZQktJ+0aGt7zzixW/ciL1kac0pwriSTzi1bn0VHT5bBR5',
-                    'AWSALBCORS': 'On1iHzUyDciwoBBbq2DdJeCq/plAl6wLbLG4rG5AZijnkVmH3BUgeAN3y0w3gDNLwdIyZy5qM3eFyyVZQktJ+0aGt7zzixW/ciL1kac0pwriSTzi1bn0VHT5bBR5',
+                    'JSESSIONID': 'Y13-13c7a1be-0246-442d-b122-f8d3e7a9d29f',
+                    'geolocation': '{%22latitude%22:-25.8537671%2C%22longitude%22:28.2483629%2C%22accuracy%22:14.062}',
+                    'AWSALB': '5FgtBvHsgxUPnUOwCL+myW20sMTu/YUGnTDrSDnbmBPDeNQhRiAeCzdjjJR+5y2LCrFd9zWwIUUjwdH9YIo/+Z4fu1dN3/1JYulmPxOBzoLGYC/VDcA89pZ9yQK7',
+                    'AWSALBCORS': '5FgtBvHsgxUPnUOwCL+myW20sMTu/YUGnTDrSDnbmBPDeNQhRiAeCzdjjJR+5y2LCrFd9zWwIUUjwdH9YIo/+Z4fu1dN3/1JYulmPxOBzoLGYC/VDcA89pZ9yQK7',
                 }
 
                 headers = {
                     'accept': 'text/plain, */*; q=0.01',
                     'accept-language': 'en-US,en;q=0.9',
                     'content-type': 'application/json',
-                    'csrftoken': 'f323f0b8-fb1d-4cfd-9f1d-d22c4ba4b100',
+                    'csrftoken': '1be86ea6-41e9-49a9-bc61-cc68aa1ea0db',
                     'origin': 'https://www.shoprite.co.za',
                     'priority': 'u=1, i',
                     'referer': f'https://www.shoprite.co.za/c-2256/All-Departments?q=%3Arelevance%3AbrowseAllStoresFacetOff%3AbrowseAllStoresFacetOff&page={page}',
-                    'sec-ch-ua': '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
+                    'sec-ch-ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
                     'sec-ch-ua-mobile': '?0',
                     'sec-ch-ua-platform': '"Windows"',
                     'sec-fetch-dest': 'empty',
                     'sec-fetch-mode': 'cors',
                     'sec-fetch-site': 'same-origin',
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
                     'x-requested-with': 'XMLHttpRequest',
                 }
+
 
                 # response = requests.post('https://www.shoprite.co.za/populateProductsWithHeavyAttributes', headers=headers, data=json_data)
                 session = requests.Session()
